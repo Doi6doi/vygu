@@ -18,7 +18,7 @@ class Vygu {
    /// singleton változó
    protected static $ins;
    /// kilépő bool
-   static $over;
+   protected $over;
 
    /// új vygu készítés
    protected static function create( $args ) {
@@ -60,7 +60,7 @@ class Vygu {
    }
 
    /// view szülőjének beállítása
-   function viewParent( View $v, ?Group $x ) {
+   function viewParent( View $v, ?Group $g ) {
       throw new EVygu("Cannot set ".$v->kind()." parent to ".Tools::str($g));
    }
 
@@ -79,6 +79,11 @@ class Vygu {
       throw new EVygu("Cannot create handler: ".$v->kind().".".$e);
    }
 
+   /// képernyő koordináta lekérdezés
+   function screenCoord( $c ) {
+	  throw new EVygu("Cannot get screen coord: $c");
+   }
+
    /// eseménysor futtatása
    function run() {
       while (! $this->runOver()) {
@@ -91,7 +96,12 @@ class Vygu {
 
    /// vége van-e a futtatásnak
    function runOver() {
-      return self::$over;
+      return $this->over;
+   }
+
+   /// futtatás befejezése
+   function finish() {
+	  $this->over = true;
    }
 
    /// view készítés

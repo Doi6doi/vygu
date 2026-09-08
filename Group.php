@@ -7,6 +7,9 @@ class Group extends View {
 
    const
       GROUP = "group";
+      
+   const
+      LAYOUT = "layout";
 
    public $items;
 
@@ -18,17 +21,13 @@ class Group extends View {
    }
 
 
-   function __destruct() {
-      $this->clear();
-      parent::__destruct();
-   }
-
    /// tartalamzott view-k száma
    function count() {
       return count($this->items);
    }
 
    /// view hozzáadása
+   
    function add( View $v ) {
       $v->parent($this);
       return $v;

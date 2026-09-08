@@ -101,7 +101,7 @@ class Gtk4 extends Vygu {
          case Action::FIRE: case Window::CLOSING:
             $this->handlerCreateSignal( $ret, $cb );
          break;
-         case View::LAYOUT: $this->handlerCreateLayout( $ret, $cb ); break;
+         case Group::LAYOUT: $this->handlerCreateLayout( $ret, $cb ); break;
          default: parent::handlerCreate($e,$cb);
       }
       return $ret;
@@ -178,7 +178,7 @@ class Gtk4 extends Vygu {
             return $this->viewHandlerSignal( $v, $e, $o, $h );
          case View::KEYPRESS:
             return $this->viewHandlerKey( $v, $e, $o, $h );
-         case View::LAYOUT:
+         case Group::LAYOUT:
             return $this->viewHandlerLayout( $v, $e, $o, $h );
          default: 
             return parent::viewHandler( $v, $e, $o, $h );
@@ -228,7 +228,7 @@ class Gtk4 extends Vygu {
       $f = $this->ffi;
       $im = $v->impl;
       $g = Tools::GET === $x;
-      /// amihez nem kell rect
+      // amihez nem kell rect
       switch ($c) {
          case Layout::ASCENT:
          case Layout::DEFWIDTH:
@@ -298,6 +298,12 @@ class Gtk4 extends Vygu {
    function viewFocus(View $v) {
       return $this->ffi->gtk_widget_grab_focus( $this->realImpl( $v ) );
    }
+
+   function viewDestroy( View $v ) {
+      if ( $v instanceof Group )
+         $v->clear();
+   }
+
 
    /// a valódi widget impl
    protected function realImpl( View $v ) {

@@ -7,13 +7,7 @@ class Label extends View {
    const
       LABEL = "label";
 
-   function __construct($args) {
-      parent::__construct($args);
-      if ( null !== $args && ! is_array($args))
-         $args = [ self::TEXT=>$args ];
-      if ( null !== $t = Tools::g( $args, self::TEXT ))
-         $this->text($t);
-   }
+   function defArg() { return self::TEXT; }
 
    function kind() { return self::LABEL; }
 

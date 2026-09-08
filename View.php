@@ -8,7 +8,6 @@ class View {
    /// propertyk
    const
       CURSOR = "cursor",
-      LAYOUT = "layout",
       STYLE = "style",
       TEXT = "text",
       VISIBLE = "visible";
@@ -26,10 +25,11 @@ class View {
    /// az eseménykezelők
    protected $handlers;
 
-
    function __construct($args=null) {
       $this->handlers = [];
       Vygu::ins()->viewCreate( $this );
+      $this->initDefArg( $args );
+      $this->initArgs( $args );
    }
 
    function __destruct() {
@@ -89,6 +89,65 @@ class View {
    /// egy jellemző
    function prop($p,$x = Tools::GET ) {
       return Vygu::ins()->viewProperty($this,$p,$x);
+   }
+
+   /// van-e ilyen jellemző
+   function isProp($p) {
+      switch ($p) {
+         case self::CURSOR:
+         case self::TEXT:
+         case self::VISIBLE:
+            return true;
+         default:
+            return false;
+      }
+   }
+   
+   /// koordináta-e
+   function isCoord($c) {
+      switch ($c) {
+         case Layout::BOTTOM:
+         case Layout::CENTERX:
+         case Layout::CENTERY:
+         case Layout::HEIGHT:
+         case Layout::LEFT:
+         case Layout::RIGHT:
+         case Layout::TOP:
+         case Layout::WIDTH:
+            return true;
+         default:
+            return false;
+      }
+   }
+   
+   /// handler-e
+   function isHandler($h) {
+      return false;
+   }
+
+   /// a default argumentum
+   function defArg() { return null; }
+
+   /// default argumentum init
+   function initDefArg( & $args ) {
+      if ( null !== $args
+         && ! is_array( $args )
+         && $d = $this->defArg()
+      )
+         $args = [$d=>$args];
+   }
+
+   /// minden argumentum init
+   function initArgs( array $args ) {
+      if ( ! $args ) return;
+      foreach ($args as $k=>$v) {
+         if ($this->isProp($k))
+            $this->prop($k,$v);
+         else if ($this->isCoord($k))
+            $this->coord($k,$v);
+         else if ($this->isHandler($k))
+            $this->handler($k,$v);
+      }
    }
 
 }

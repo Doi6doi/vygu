@@ -28,6 +28,11 @@ class Layout {
       GAP = "gap",
       ROWS = "rows";
 
+   /// alap igazítás, egy oszlopos, gap:2
+   static function def( Group $g ) {
+      return self::grid( $g, [self::COLS=>1, self::GAP=>2] );
+   }
+
    /// középre igazítja az összeset
    static function center( Group $g ) {
       [$cw,$ch] = $g->coords([self::CONTWIDTH,self::CONTHEIGHT]);

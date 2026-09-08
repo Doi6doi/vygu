@@ -6,7 +6,7 @@ namespace vygu;
 class Tools {
 
    const
-      GET = "%0\x00\x01\x02\x04",
+      GET = "%0\x00\x01\x04",
       U16L = "UTF-16LE",
       UTF = "UTF-8";
 
@@ -17,11 +17,27 @@ class Tools {
       return null;
    }
 
+   /// első lehetséges array_get
+   static function ga($arr,array $flds) {
+      if ( ! is_array($arr)) return null;
+      foreach ($flds as $f) {
+         if (array_key_exists($f,$arr))
+            return $arr[$f];
+      }
+      return null;
+   }
+
    /// array_get + default
    static function gd($arr,$fld,$def) {
       if ( is_array($arr) && array_key_exists($fld,$arr))
          return $arr[$fld];
       return $def;
+   }
+   
+   /// tömbből elem kivétele
+   static function arrayRemove( array $arr, $x ) {
+      if ( false !== $i = array_search( $x, $arr, true ))
+         array_splice( $arr, $i, 1 );
    }
 
    /// egész osztás
