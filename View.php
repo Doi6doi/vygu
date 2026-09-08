@@ -130,11 +130,12 @@ class View {
 
    /// default argumentum init
    function initDefArg( & $args ) {
-      if ( null !== $args
-         && ! is_array( $args )
-         && $d = $this->defArg()
-      )
-         $args = [$d=>$args];
+      if ( ! is_array( $args )) {
+         if ( null !== $args
+               && $d = $this->defArg())
+            $args = [$d=>$args];
+            else $args = [];
+      }
    }
 
    /// minden argumentum init

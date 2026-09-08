@@ -25,11 +25,11 @@ class Calc {
       $this->curr = null;
       $this->done = false;
       $w = $this->wind = (new Window([Window::TITLE=>"Calculator",Window::MAIN=>true]))
-         ->handler( View::LAYOUT, function ($g) {
+         ->handler( Group::LAYOUT, function ($g) {
             Layout::fill( $g, [Layout::DIR=>Layout::BOTTOM, Layout::GAP=>4] );
          });
       $g = $w->add(new Group())
-         ->handler( View::LAYOUT, function($g) {
+         ->handler( Group::LAYOUT, function($g) {
             Layout::grid( $g, [Layout::COLS=>4,Layout::GAP=>4]);
          });
       $this->lab = $w->add( new Label($this->curr) );

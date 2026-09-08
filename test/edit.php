@@ -18,7 +18,7 @@ class Edit {
    /// view-k elkészítése
    function init() {
       $w = new Window([Window::TITLE=>"Edit",Window::MAIN=>true]);
-      $w->handler( View::LAYOUT, function($g) { Layout::fill($g,[Layout::GAP=>2]); });
+      $w->handler( Group::LAYOUT, function($g) { Layout::fill($g,[Layout::GAP=>2]); });
       $this->memo = $w->add( new Memo() );
       $w->menu( $this->initMenu() );
       $this->memo->focus();
