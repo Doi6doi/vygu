@@ -5,7 +5,7 @@ namespace vygu;
 class Handler {
 
    public $view;
-   public $impl;
+   public $cb;
    public $data;
 
 }

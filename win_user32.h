@@ -14,11 +14,13 @@ HWND CreateWindowExW( DWORD exStyle, WSTR clsName,
 LRESULT DefWindowProcW( HWND wnd, UINT Msg, WPARAM wParam, 
    LPARAM lParam );
 LRESULT DispatchMessageW(const MSG *lpMsg);   
+BOOL GetClientRect(HWND hWnd, RECT *lpRect);
 BOOL GetMessageW( MSG  *lpMsg, HWND hWnd, UINT wMsgFilterMin,
    UINT wMsgFilterMax );   
 LONG_PTR GetWindowLongPtrW(HWND hWnd, int nIndex);
 BOOL GetWindowRect(HWND hWnd, RECT *lpRect);
 BOOL IsWindowVisible( HWND wnd );
+HCURSOR LoadCursorW(HINSTANCE hInstance, WSTR lpCursorName);
 BOOL MoveWindow(HWND, int X, int Y, int width, int height, BOOL repaint);
 void PostQuitMessage(int nExitCode);
 ATOM RegisterClassExW(WNDCLASSEXW *c);

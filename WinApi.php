@@ -16,9 +16,19 @@ class WinApi extends Vygu {
    /// temp adatok
    const
       TLAST = "tLast",
+      TCONT = "tCont",
       TRECT = "tRect";
 
+   /// mapek
    const
+     CURSORS = [
+         0x7f00=>Cursor::DEFAULT,
+         0x7f02=>Cursor::WAIT
+     ];
+
+   const
+      COLOR_WINDOW = 5,
+     
       GWL_STYLE = -16,
    
       WM_DESTROY = 2,
@@ -60,11 +70,14 @@ class WinApi extends Vygu {
    protected $err;
    /// hasznos rect
    protected $rect;
+   /// kurzorok betöltve
+   protected $crsrs;
       
    function __construct($args) {
 	   parent::__construct($args);
       $this->wnds = [];
       $this->swps = [];
+      $this->crsrs = [];
       $this->initNwms();
       $ht = Tools::loadFile( __DIR__."/win_type".Tools::sysBits().".h" );
 	   $hu = Tools::loadFile( __DIR__."/win_user32.h" );
@@ -85,6 +98,8 @@ class WinApi extends Vygu {
       $wc->wndProc = $wp->f;
       $wc->clsName = $cn;
       $wc->inst = $this->hins;
+      $wc->back = $u->cast("void *",self::COLOR_WINDOW);
+      $wc->cursor = $this->fromCursor( Cursor::DEFAULT );
       $this->wndAtom = $u->RegisterClassExW( \FFI::addr($wc) );
       $this->checkW( $this->wndAtom, "Could not register window class" );
    }      
@@ -137,16 +152,17 @@ class WinApi extends Vygu {
       $u = $this->ffu;
       if ( array_key_exists( $msg, $this->nwms )) {
          try {
-            $v = $this->viewByHwnd( $hwnd );
-            switch ($msg) {
-               case self::WM_CLOSE:
-                  if ( $v instanceof Window 
-                     && $h = $v->handler( Window::CLOSING )
-                  ) {
-                     if ( ! call_user_func( $h->impl, $v ) )
+            if ( $v = $this->viewByHwnd( $hwnd ) ) {
+               switch ($msg) {
+                  case self::WM_CLOSE:
+                     if ( ! $v->handle( Window::CLOSING ))
                         return 0;
-                  }
-               break;
+                  break;
+                  case self::WM_SIZE:
+                     $v->handle( Group::LAYOUT );
+                     return 0;
+                  break;
+               }
             }
          } catch (Throwable $e) {
             $this->err = $e;
@@ -205,14 +221,12 @@ class WinApi extends Vygu {
       $u = $this->ffu;
       if (Tools::GET === $x)
          return $u->IsWindowVisible( $v->impl );
-      $u->ShowWindow( $v->impl, $x ? self::SW_SHOW : self::SW_HIDE );
-   }
-
-   function handlerCreate(View $v, $e, callable $cb) {
-      $ret = new Handler();
-      $ret->view = $v;
-      $ret->impl = $cb;
-      return $ret;
+      if ($x) {
+         $u->ShowWindow( $v->impl, self::SW_SHOW );
+         $v->handle( Group::LAYOUT );
+      } else {
+         $u->ShowWindow( $v->impl, self::SW_HIDE );
+      }
    }
 
    function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
@@ -353,6 +367,21 @@ class WinApi extends Vygu {
       }
    }      
 
+   /// speciális koordináták
+   function viewCoordSpec( $v, $c, $x, &$tmp ) {
+      switch ($c) {
+         case Layout::CONTWIDTH:
+            $r = $this->temp( $v, self::TCONT, $tmp );
+            return $r->right - $r->left;
+         break;
+         case Layout::CONTHEIGHT:
+            $r = $this->temp( $v, self::TCONT, $tmp );
+            return $r->bottom - $r->top;
+         break;
+         default: throw new EVygu("Unknown spec coord: $c");
+      }
+   }
+
    /// temp adat $v-ez
    protected function temp(View $v, $kind, & $tmp ) {
       $u = $this->ffu;
@@ -361,8 +390,13 @@ class WinApi extends Vygu {
       if ( ! $ret = Tools::g( $tmp, $kind )) {
          switch ($kind) {
             case self::TRECT:
-               $this->checkW( $u->GetWindowRect( $v->impl, \FFI::addr($this->rect)),
-                  "Could not get window rect");
+               $this->checkW( $u->GetWindowRect( $v->impl, 
+                  \FFI::addr($this->rect)),"Could not get window rect");
+               $ret = $this->rect;
+            break;
+            case self::TCONT:
+               $this->checkW( $u->GetClientRect( $v->impl, 
+                  \FFI::addr($this->rect)),"Could not get client rect");
                $ret = $this->rect;
             break;
             default: throw new EVygu("Unknown temp kind: $kind");
@@ -394,5 +428,27 @@ class WinApi extends Vygu {
             true ), "Could not move window");
       }
    }
+
+   /// kurzor konverzió vissza
+   protected function fromCursor( $c ) {
+      if ( ! $ret = Tools::g( $this->crsrs, $c )) {
+         $u = $this->ffu;
+         if ( ! $id = Tools::g( $this->map( View::CURSOR ), $c ))
+            throw new EVygu("Unknown cursor: $c");
+         $idp = $u->cast("void *",$id);
+         $ret = $this->checkW( $u->LoadCursorW( null, $idp ),
+            "Could not load cursor: $id");
+         $this->crsrs[ $c ] = $ret;
+      }
+      return $ret;
+   }
+
+   protected function createMap( $name ) {
+      switch ($name) {
+         case View::CURSOR: return array_flip( self::CURSORS );
+         default: return parent::createMap($name);
+      }
+   }
+
 
 }

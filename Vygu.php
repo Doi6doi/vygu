@@ -17,6 +17,8 @@ class Vygu {
 
    /// singleton változó
    protected static $ins;
+   /// hashek
+   protected $maps;
    /// kilépő bool
    protected $over;
 
@@ -41,6 +43,7 @@ class Vygu {
    protected $handlers;
 
    function __construct($args) {
+	  $this->maps = [];
       $this->handlers = [];
    }
 
@@ -51,6 +54,12 @@ class Vygu {
 
    /// képernyő létrehozása
    function screenCreate( Screen $s ) {
+   }
+
+   /// handler hívása
+   function handlerCall( Handler $h, array $args ) {
+Tools::debug("v hc", $h, $h->cb, $args );	   
+	  return call_user_func_array( $h->cb, $args );
    }
 
    /// menü létrehozása
@@ -80,7 +89,10 @@ class Vygu {
 
    /// handler készítés
    function handlerCreate(View $v, $e, callable $cb) {
-      throw new EVygu("Cannot create handler: ".$v->kind().".".$e);
+      $ret = new Handler();
+      $ret->view = $v;
+      $ret->cb = $cb;
+      return $ret;
    }
 
    /// képernyő koordináta lekérdezés
@@ -168,6 +180,20 @@ class Vygu {
 
    /// utolsó viewcoord
    protected function viewCoordLast(View $v, $tmp) {
+   }
+
+   //// vissza hash
+   protected function map($name) {
+      if ( ! $ret = Tools::g( $this->maps, $name )) {
+		 $ret = $this->createMap( $name );
+         $this->maps[$name] = $ret;
+      }
+      return $ret;
+   }
+
+   /// vissza hash készítés
+   protected function createMap( $name ) {
+	  throw new EVygu("Unknown map: $name");
    }
 
 }

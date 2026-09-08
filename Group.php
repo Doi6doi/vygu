@@ -40,6 +40,20 @@ class Group extends View {
       $this->items[$at]->parent(null);
    }
 
+   function isHandler($h) {
+      switch ($h) {
+         case self::LAYOUT: return true;
+         default: return parent::isHandler($h);
+      }
+   }
+
+   function handle($e,array $args=[]) {
+      switch ($e) {
+         case self::LAYOUT: $args=[$this]; break;
+      }
+      return parent::handle($e,$args);
+   }
+
    /// minden elem kivétele
    function clear() {
       while ($n = $this->count() )

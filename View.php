@@ -52,6 +52,13 @@ class View {
       }
    }
 
+   /// egy esemény lekezelése
+   function handle($e,array $args=[]) {
+      if ( ! $h = $this->handler($e))
+         return;
+      Vygu::ins()->handlerCall( $h, $args );
+   }
+
    /// szülő view
    function parent( $x = Tools::GET ) { 
       $old = $this->parent;

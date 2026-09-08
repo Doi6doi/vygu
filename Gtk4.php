@@ -69,8 +69,6 @@ class Gtk4 extends Vygu {
    protected $ffi;
    /// kivétel eseménykezelőben
    protected $err;
-   /// hashek
-   protected $maps;
    /// alloc lekéréshez
    protected $allo;
    /// rect lekéréshez
@@ -97,9 +95,7 @@ static $k;
    }
 
    function handlerCreate(View $v, $e, callable $cb) {
-      $ret = new Handler();
-      $ret->view = $v;
-      $ret->data = [];
+      $ret = parent::handlerCreate($v,$e,$cb);
       switch ($e) {
          case View::KEYPRESS: $this->handlerCreateKey( $ret, $cb ); break;
          case Action::FIRE: 
@@ -449,7 +445,8 @@ static $k;
          $ret = $this->callCallback($cb);
          return $inv ? $ret : ! $ret;
       };
-      $h->impl = $c->c;
+      $h->cb = $cb;
+      $h->data = $c->c;
    }      
 
    /// gombynomás kezelő
@@ -459,7 +456,7 @@ static $k;
       $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($cb) {
          return $this->callCallback(  $cb, [$this->key( $kVal, $kCode, $state )] );
       };
-      $h->impl = $c->c;
+      $h->data = $c->c;
    }
 
    /// layout kezelő
@@ -477,7 +474,7 @@ static $k;
       $c->allocate = function( $widget, $width, $height, $base ) use ($h,$cb) {
          return $this->callCallback( $cb, [$h->view] );
       };
-      $h->impl = $c;
+      $h->data = $c;
    }
 
    /// signal kezelő beállítása
@@ -488,7 +485,7 @@ static $k;
       if ($h) {
          $h->data[ self::HANDLERID ] = 
             $f->g_signal_connect_data( $v->impl, $this->eventSignal($e), 
-               $h->impl, null, null, 0 );
+               $h->data, null, null, 0 );
       }
    }
 
@@ -501,15 +498,15 @@ static $k;
       if ($h)
          $h->data[ self::HANDLERID ] = 
             $f->g_signal_connect_data( $c, $this->eventSignal($e), 
-               $h->impl, null, null, 0 );
+               $h->data, null, null, 0 );
    }
 
    /// layout kezelő beállítása
    protected function viewHandlerLayout( $v, $e, $o, $h ) {
       $f = $this->ffi;
       if ($h)
-         $cl = $f->gtk_custom_layout_new( null, $h->impl->measure, 
-            $h->impl->allocate );
+         $cl = $f->gtk_custom_layout_new( null, $h->data->measure, 
+            $h->data->allocate );
          else $cl = null;
       $f->gtk_widget_set_layout_manager( $this->contImpl($v), $cl );
    }
@@ -559,23 +556,18 @@ static $k;
       return $ret;
    }
 
-   //// vissza hash
-   protected function map($name) {
-      if ( ! $ret = Tools::g( $this->maps, $name )) {
-         switch ($name) {
-            case View::CURSOR: $ret = array_flip( self::CURSORS ); break;
-            default: throw new EVygu("Unknown map: $name");
-         }
-         $this->maps[$name] = $ret;
-      }
-      return $ret;
-   }
-
    /// kurzor konverzió oda
    protected function cursor( $c ) {
       if ( $ret = Tools::g( self::CURSORS, $c ))
          return $ret;
       throw new EVygu("Unknown cursor: $c");
+   }
+
+   protected function createMap( $name ) {
+      switch ($name) {
+         case View::CURSOR: return array_flip( self::CURSORS );
+         default: return parent::createMap($name);
+      }
    }
 
    /// kurzor konverzió vissza
