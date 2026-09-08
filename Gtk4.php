@@ -72,6 +72,8 @@ class Gtk4 extends Vygu {
    /// hashek
    protected $maps;
    /// alloc lekéréshez
+   protected $allo;
+   /// rect lekéréshez
    protected $rect;
    /// intek visszaadásához
    protected $ints;
@@ -82,11 +84,13 @@ class Gtk4 extends Vygu {
       $h = Tools::loadFile( __DIR__."/gtk4.h" );
       $f = $this->ffi = \FFI::cdef( $h, "libgtk-4.so.1" );
       $f->gtk_init();
-      $this->rect = $f->new("GtkAllocation");
+      $this->allo = $f->new("GtkAllocation");
+      $this->rect = $f->new("GdkRectangle");
       $this->ints = $f->new("int[4]");
    }
 
    function runStep( $wait ) {
+static $k;
       if ( $ret = $this->ffi->g_main_context_iteration(null,$wait))
          $this->checkErr();
       return $ret;
@@ -98,8 +102,11 @@ class Gtk4 extends Vygu {
       $ret->data = [];
       switch ($e) {
          case View::KEYPRESS: $this->handlerCreateKey( $ret, $cb ); break;
-         case Action::FIRE: case Window::CLOSING:
-            $this->handlerCreateSignal( $ret, $cb );
+         case Action::FIRE: 
+            $this->handlerCreateSignal( $ret, $cb, false );
+         break;
+         case Window::CLOSING:
+            $this->handlerCreateSignal( $ret, $cb, true );
          break;
          case Group::LAYOUT: $this->handlerCreateLayout( $ret, $cb ); break;
          default: parent::handlerCreate($e,$cb);
@@ -168,9 +175,10 @@ class Gtk4 extends Vygu {
 
    /// view felszámolás
    function viewDestroy( View $v ) {
+      if ( $v instanceof Group )
+         $v->clear();
       $this->ffi->g_object_unref( $v->impl );
    }
-
 
    function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
       switch ($e) {
@@ -299,11 +307,31 @@ class Gtk4 extends Vygu {
       return $this->ffi->gtk_widget_grab_focus( $this->realImpl( $v ) );
    }
 
-   function viewDestroy( View $v ) {
-      if ( $v instanceof Group )
-         $v->clear();
+   function screenCreate( Screen $s ) {
+      $s->data = $this->check( $this->ffi->gdk_display_get_default(),
+         "Could not get display" );
    }
 
+   function screenCoord( Screen $s, $c ) {
+      $f = $this->ffi;
+      switch ($c) {
+         case Layout::CONTWIDTH: return $this->screenCoord( $s, Layout::WIDTH );
+         case Layout::CONTHEIGHT: return $this->screenCoord( $s, Layout::HEIGHT );
+         case Layout::WIDTH:
+         case Layout::HEIGHT:
+            break;
+         default:
+            return parent::screenCoord($s,$c);
+      }
+      $f->gdk_monitor_get_geometry( $this->monitor($s), 
+         \FFI::addr( $this->rect ));
+      switch ($c) {
+         case Layout::WIDTH: return $this->rect->width;
+         case Layout::HEIGHT: return $this->rect->height;
+      }
+      return parent::screenCoord($s,$c);
+   }
+   
 
    /// a valódi widget impl
    protected function realImpl( View $v ) {
@@ -414,11 +442,12 @@ class Gtk4 extends Vygu {
    }
 
    /// signal kezelő
-   protected function handlerCreateSignal( Handler $h, $cb ) {
+   protected function handlerCreateSignal( Handler $h, $cb, $inv ) {
       $f = $this->ffi;
-      $c = $f->new( "struct sSignalCallback" );
-      $c->c = function( $impl, $udata ) use ($cb) {
-         return $this->callCallback( $cb );
+      $c = $f->new( "sSignalCallback" );
+      $c->c = function( $impl, $udata ) use ($cb,$inv) {
+         $ret = $this->callCallback($cb);
+         return $inv ? $ret : ! $ret;
       };
       $h->impl = $c->c;
    }      
@@ -426,7 +455,7 @@ class Gtk4 extends Vygu {
    /// gombynomás kezelő
    protected function handlerCreateKey( Handler $h, $cb ) {
       $f = $this->ffi;
-      $c = $f->new( "struct sKeyPressCallback" );
+      $c = $f->new( "sKeyPressCallback" );
       $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($cb) {
          return $this->callCallback(  $cb, [$this->key( $kVal, $kCode, $state )] );
       };
@@ -436,7 +465,7 @@ class Gtk4 extends Vygu {
    /// layout kezelő
    protected function handlerCreateLayout( Handler $h, $cb ) {
       $f = $this->ffi;
-      $c = $f->new( "struct sLayoutCallback" );
+      $c = $f->new( "sLayoutCallback" );
       $c->measure = function( $widget, $ori, $fors, $min, $nat, 
          $min_base, $nat_base ) 
       {
@@ -596,8 +625,8 @@ class Gtk4 extends Vygu {
       if ( ! $ret = Tools::g( $tmp, $kind )) {
          switch ($kind) {
             case self::RECT:
-               $f->gtk_widget_get_allocation( $v->impl, \FFI::addr($this->rect));
-               $ret = $this->rect;
+               $f->gtk_widget_get_allocation( $v->impl, \FFI::addr($this->allo));
+               $ret = $this->allo;
             break;
             case self::MESX:
                $ret = $this->ints;
@@ -622,5 +651,11 @@ class Gtk4 extends Vygu {
       }
    }
 
+   /// első gdk monitor
+   protected function monitor($s) {
+      $f = $this->ffi;
+      $mts = $f->gdk_display_get_monitors($s->data);
+      return $f->g_list_model_get_item( $mts, 0 );
+   }
 
 }

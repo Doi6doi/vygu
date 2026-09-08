@@ -49,6 +49,10 @@ class Vygu {
       throw new EVygu("Cannot focus ".$v->kind());
    }
 
+   /// képernyő létrehozása
+   function screenCreate( Screen $s ) {
+   }
+
    /// menü létrehozása
    function menuCreate(Menu $m) {
       throw new EVygu("Cannot create menu");
@@ -80,7 +84,7 @@ class Vygu {
    }
 
    /// képernyő koordináta lekérdezés
-   function screenCoord( $c ) {
+   function screenCoord( Screen $s, $c ) {
 	  throw new EVygu("Cannot get screen coord: $c");
    }
 
@@ -101,7 +105,7 @@ class Vygu {
 
    /// futtatás befejezése
    function finish() {
-	  $this->over = true;
+	   $this->over = true;
    }
 
    /// view készítés

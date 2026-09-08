@@ -55,7 +55,5 @@ class Window extends Group {
       if ( ! Tools::ga( $args, [Layout::TOP, Layout::BOTTOM, Layout::CENTERY] ))
          $this->coord( Layout::CENTERY, $s->coord( Layout::CONTHEIGHT ) >> 1 );
    }
-      
-
 
 }

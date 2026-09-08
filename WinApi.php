@@ -270,7 +270,7 @@ class WinApi extends Vygu {
       return $p - $this->ffu->cast("void*",0);
    }
 
-   function screenCoord( $c ) {
+   function screenCoord( Screen $s, $c ) {
       $u = $this->ffu;
       $r = $this->rect;
       switch ($c) {

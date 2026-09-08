@@ -35,7 +35,7 @@ class Tools {
    }
    
    /// tömbből elem kivétele
-   static function arrayRemove( array $arr, $x ) {
+   static function arrayRemove( array & $arr, $x ) {
       if ( false !== $i = array_search( $x, $arr, true ))
          array_splice( $arr, $i, 1 );
    }

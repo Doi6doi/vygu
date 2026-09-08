@@ -13,8 +13,14 @@ class Screen {
       return self::$ins;
    }
 
+   public $data;
+
+   function __construct() {
+      Vygu::ins()->screenCreate( $this );
+   }
+
    function coord( $c ) {
-      return Vygu::ins()->screenCoord( $c );
+      return Vygu::ins()->screenCoord( $this, $c );
    }
 
 }

@@ -7,12 +7,14 @@ typedef void * gpointer;
 typedef unsigned long gulong;
 typedef unsigned long GType;
 
+typedef struct _GdkMonitor GdkMonitor;
+typedef struct _GdkDisplay GdkDisplay;
+typedef struct _GListModel GListModel;
 typedef struct _GMenu GMenu;
 typedef struct _GtkApplication GtkApplication;
 typedef struct _GtkEventController GtkEventController;
 typedef struct _GtkLayoutManager GtkLayoutManager;
 typedef struct _GtkTextBuffer GtkTextBuffer;
-typedef struct _GtkTextIter GtkTextIter;
 typedef struct _GtkWidget GtkWidget;
 
 typedef gboolean (*SignalCallback)(gpointer, gpointer);
@@ -24,16 +26,19 @@ typedef void (*GtkCustomAllocate)( GtkWidget *,
 typedef gboolean (*KeyPressCallback)(gpointer cont, guint keyval,
    guint keycode, guint state, gpointer data);
 
-typedef struct { int x; int y; int width; int height; } GtkAllocation;
-struct sKeyPressCallback { KeyPressCallback c; };
-struct sLayoutCallback { GtkCustomMeasure measure; GtkCustomAllocate allocate; };
-struct sSignalCallback { SignalCallback c; };
-struct _GtkTextIter { gpointer dummy1; gpointer dummy2; int dummy3; int dummy4;
+typedef struct { int x; int y; int width; int height; } GdkRectangle;
+typedef struct { GtkCustomMeasure measure; GtkCustomAllocate allocate; } sLayoutCallback;
+typedef struct { KeyPressCallback c; } sKeyPressCallback;
+typedef struct { SignalCallback c; } sSignalCallback;
+typedef struct { gpointer dummy1; gpointer dummy2; int dummy3; int dummy4;
   int dummy5; int dummy6; int dummy7; int dummy8;
   gpointer dummy9; gpointer dummy10; int dummy11; int dummy12;
   int dummy13; gpointer dummy14;
-};
+} GtkTextIter;
 
+typedef GdkRectangle GtkAllocation;
+
+gpointer g_list_model_get_item( GListModel *list, guint position );
 gboolean g_main_context_iteration( gpointer context, gboolean may_block );
 GMenu * g_menu_new();
 gpointer g_object_ref_sink(gpointer object);
@@ -41,7 +46,10 @@ void g_object_unref(gpointer object);
 gulong g_signal_connect_data( gpointer instance, const char *detailed_signal,
    gpointer callback, gpointer data, gpointer destroy_data, int flags);
 void g_signal_handler_disconnect( gpointer instance, gulong handler_id );
+GdkDisplay *gdk_display_get_default(void);
+GListModel *gdk_display_get_monitors(GdkDisplay *display);
 gunichar gdk_keyval_to_unicode(guint keyval);
+void gdk_monitor_get_geometry(GdkMonitor *monitor, GdkRectangle *geometry );
 GtkWidget * gtk_button_new();
 char *gtk_button_get_label(GtkWidget *button);
 void gtk_button_set_label(GtkWidget *button, const char *label);
