@@ -19,10 +19,13 @@ class View {
 
    /// a konkrét implementáció
    public $impl;
+   /// szülő view
+   public $parent;
    /// plusz adat
    public $data;
    /// az eseménykezelők
    protected $handlers;
+
 
    function __construct($args=null) {
       $this->handlers = [];
@@ -47,6 +50,18 @@ class View {
          $this->handlers[$e] = $xh;
          return $this;
       }
+   }
+
+   /// szülő view
+   function parent( $x = Tools::GET ) { 
+      $old = $this->parent;
+      if (Tools::GET === $x) return $old;
+      Vygu::ins()->viewParent( $this, $x );
+      if ($old)
+         Tools::arrayRemove( $old->items, $this );
+      $this->parent = $x;
+      if ($x)
+         $x->items[] = $this;
    }
 
    /// láthatóság

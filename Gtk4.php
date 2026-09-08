@@ -68,7 +68,7 @@ class Gtk4 extends Vygu {
    /// ffi kapcsolat
    protected $ffi;
    /// kivétel eseménykezelőben
-   protected static $err;
+   protected $err;
    /// hashek
    protected $maps;
    /// alloc lekéréshez
@@ -281,30 +281,20 @@ class Gtk4 extends Vygu {
             $this->viewCoordLast( $v, $tmp );
       }
    }      
-   
-   function groupAdd(Group $g, View $v) {
-      $f = $this->ffi;
-      switch ($k = $g->kind()) {
+
+   function viewParent( View $v, ?Group $g ) {
+	  $f = $this->ffi;
+	  if ( ! $g )
+	     return $f->gtk_widget_unparent( $v->impl );
+	  switch ($g->kind()) {
          case Group::GROUP:
          case Window::WINDOW:
-            $f->gtk_widget_set_parent( $v->impl, $this->contImpl( $g ) );
-         break;
-         default: parent::groupAdd($g,$v);
+            return $f->gtk_widget_set_parent( $v->impl, 
+               $this->contImpl( $g ) );
+         default: parent::viewParent( $v, $g );
       }
    }
-
-   function groupDrop(Group $g, $at ) {
-      $f = $this->ffi;
-      switch ($k = $g->kind()) {
-         case Group::GROUP:
-         case Window::WINDOW:
-            $ai = $g->items[$at]->impl;
-            $f->gtk_widget_unparent( $ai );
-         break;
-         default: parent::groupDrop($g,$at);
-      }
-   }
-
+		   
    function viewFocus(View $v) {
       return $this->ffi->gtk_widget_grab_focus( $this->realImpl( $v ) );
    }
@@ -340,8 +330,8 @@ class Gtk4 extends Vygu {
 
    /// a globális $err ellenőrzése, és dobása
    protected function checkErr() {
-      if ( $e = self::$err ) {
-         self::$err = null;
+      if ( $e = $this->err ) {
+         $this->err = null;
          throw $e;
       }
    }
@@ -565,7 +555,7 @@ class Gtk4 extends Vygu {
       try {
          return call_user_func_array( $cb, $args );
       } catch (\Throwable $e) {
-         self::$err = $e;
+         $this->err = $e;
       }
    }
 

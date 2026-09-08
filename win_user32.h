@@ -1,20 +1,3 @@
-typedef void * HWND;
-typedef void * HINSTANCE;
-typedef void * HMENU;
-typedef void * HICON;
-typedef void * HCURSOR;
-typedef void * HBRUSH;
-typedef int BOOL;
-typedef unsigned int UINT;
-typedef unsigned short WCHAR;
-typedef unsigned short WORD;
-typedef WORD ATOM;
-typedef unsigned long DWORD;
-typedef unsigned long long WPARAM;
-typedef long long LPARAM;
-typedef long long LRESULT;
-typedef const WCHAR * WSTR;
-
 typedef LRESULT (__stdcall *WNDPROC)( HWND, UINT, WPARAM, LPARAM );
 typedef struct { WNDPROC f; } SWNDPROC;
 typedef struct { UINT size; UINT style; WNDPROC wndProc; int clsExtra;
@@ -27,6 +10,7 @@ HWND CreateWindowExW( DWORD exStyle, WSTR clsName,
    void * lParam );
 LRESULT DefWindowProcW( HWND wnd, UINT Msg, WPARAM wParam, 
    LPARAM lParam );
+BOOL IsWindowVisible( HWND wnd );
 ATOM RegisterClassExW(WNDCLASSEXW *c);
 BOOL SetWindowTextW( HWND wnd, WSTR s );
 

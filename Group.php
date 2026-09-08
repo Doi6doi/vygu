@@ -30,8 +30,7 @@ class Group extends View {
 
    /// view hozzáadása
    function add( View $v ) {
-      Vygu::ins()->groupAdd( $this, $v );
-      $this->items [] = $v;
+      $v->parent($this);
       return $v;
    }
 
@@ -39,8 +38,7 @@ class Group extends View {
    function drop( $at ) {
       if ( $at < 0 || $this->count() <= $at )
          return;
-      Vygu::ins()->groupDrop( $this, $at );
-      array_splice( $this->items, $at, 1 );
+      $this->items[$at]->parent(null);
    }
 
    /// minden elem kivétele
@@ -48,6 +46,5 @@ class Group extends View {
       while ($n = $this->count() )
          $this->drop( $n-1 );
    }
-
 
 }

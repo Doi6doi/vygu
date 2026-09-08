@@ -25,12 +25,9 @@ class Vygu {
 	  if ( ! $e = Tools::g( $args, self::ENGINE )) {
 		 $iz = 8*PHP_INT_SIZE;
 		 switch ($f = PHP_OS_FAMILY) {
-			case "Windows": 
-			   if (64 == $iz)
-			      $e = WinApi::WINAPI; 
-			break;
+			case "Windows": $e = WinApi::WINAPI; break;
 			case "Linux": $e = Gtk4::GTK4; break;
-			default: throw new EVygu("Unknown system: $f $iz");
+			default: throw new EVygu("Unknown system: $f");
 		 }
 	  }
 	  switch ($e) {
@@ -52,11 +49,6 @@ class Vygu {
       throw new EVygu("Cannot focus ".$v->kind());
    }
 
-   /// view hozzáadása grouphoz
-   function groupAdd(Group $g, View $v) {
-      throw new EVygu("Cannot add ".$v->kind()." to ".$g->kind());
-   }
-
    /// menü létrehozása
    function menuCreate(Menu $m) {
       throw new EVygu("Cannot create menu");
@@ -67,9 +59,9 @@ class Vygu {
       throw new EVygu("Cannot add ".Tools::type($x)." to menu");
    }
 
-   /// view kivétele group-ból
-   function groupDrop(Group $g, $at ) {
-      throw new EVygu("Cannot drop from ".$g->kind());
+   /// view szülőjének beállítása
+   function viewParent( View $v, ?Group $x ) {
+      throw new EVygu("Cannot set ".$v->kind()." parent to ".Tools::str($g));
    }
 
    /// esemény kezelése

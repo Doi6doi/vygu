@@ -1,0 +1,16 @@
+typedef void * HWND;
+typedef void * HINSTANCE;
+typedef void * HMENU;
+typedef void * HICON;
+typedef void * HCURSOR;
+typedef void * HBRUSH;
+typedef int BOOL;
+typedef unsigned int UINT;
+typedef unsigned short WCHAR;
+typedef unsigned short WORD;
+typedef WORD ATOM;
+typedef unsigned long DWORD;
+typedef unsigned long long WPARAM;
+typedef long long LPARAM;
+typedef long long LRESULT;
+typedef const WCHAR * WSTR;

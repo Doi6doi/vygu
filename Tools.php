@@ -44,6 +44,11 @@ class Tools {
       throw new EVygu( "Not implemented: ".get_class($obj).".$meth" );
    }
 
+   /// rendszer bitek száma
+   static function sysBits() {
+      return 8*PHP_INT_SIZE;
+   }
+
    /// fájl betöltése
    static function loadFile($fname) {
       $ret = file_get_contents($fname);
