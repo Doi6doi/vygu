@@ -5,6 +5,7 @@ namespace vygu;
 class Vygu {
 
    const
+      ENGINE = "engine",
       OVER = "over";
 
    /// singleton
@@ -21,7 +22,22 @@ class Vygu {
 
    /// új vygu készítés
    protected static function create( $args ) {
-      return new Gtk4( $args );
+	  if ( ! $e = Tools::g( $args, self::ENGINE )) {
+		 $iz = 8*PHP_INT_SIZE;
+		 switch ($f = PHP_OS_FAMILY) {
+			case "Windows": 
+			   if (64 == $iz)
+			      $e = WinApi::WINAPI; 
+			break;
+			case "Linux": $e = Gtk4::GTK4; break;
+			default: throw new EVygu("Unknown system: $f $iz");
+		 }
+	  }
+	  switch ($e) {
+		 case WinApi::WINAPI: return new WinApi($args);
+		 case Gtk4::GTK4: return new Gtk4($args);
+		 default: throw new EVygu("Unknown engine: $e");
+	  }
    }
 
    /// kezelők

@@ -7,6 +7,7 @@ class Tools {
 
    const
       GET = "%0\x00\x01\x02\x04",
+      U16L = "UTF-16LE",
       UTF = "UTF-8";
 
    /// array_get

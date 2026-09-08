@@ -6,6 +6,9 @@ namespace vygu;
 class Gtk4 extends Vygu {
 
    const
+      GTK4 = "gtk4";
+
+   const
       KEYCTRL = "keyCtrl",
       LAYOUTMGR = "layoutMgr",
       HANDLERID = "handlerID",
@@ -71,7 +74,7 @@ class Gtk4 extends Vygu {
    /// alloc lekéréshez
    protected $rect;
    /// intek visszaadásához
-   protected  $ints;
+   protected $ints;
 
    function __construct($args) {
       parent::__construct($args);
