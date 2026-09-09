@@ -12,6 +12,7 @@ class Gtk4 extends Vygu {
       KEYCTRL = "keyCtrl",
       LAYOUTMGR = "layoutMgr",
       HANDLERID = "handlerID",
+      HANDLERPTR = "handlerPtr",
       TEXTBUFFER ="textbuffer",
       TEXTITER = "textiter",
       TEXTITER2 = "textiter2",
@@ -75,6 +76,8 @@ class Gtk4 extends Vygu {
    protected $rect;
    /// intek visszaadásához
    protected $ints;
+   /// igen/nem konstansok
+   protected $yesno;
 
    function __construct($args) {
       parent::__construct($args);
@@ -85,6 +88,9 @@ class Gtk4 extends Vygu {
       $this->allo = $f->new("GtkAllocation");
       $this->rect = $f->new("GdkRectangle");
       $this->ints = $f->new("int[4]");
+      $this->yesno = $f->new("int[2]");
+      $this->yesno[0] = 0;
+      $this->yesno[1] = 1;
    }
 
    function runStep( $wait ) {
@@ -97,7 +103,7 @@ static $k;
    function handlerCreate(View $v, $e, callable $cb) {
       $ret = parent::handlerCreate($v,$e,$cb);
       switch ($e) {
-         case View::KEYPRESS: $this->handlerCreateKey( $ret, $cb ); break;
+         case View::KEY: $this->handlerCreateKey( $ret, $cb ); break;
          case Action::FIRE: 
             $this->handlerCreateSignal( $ret, $cb, false );
          break;
@@ -180,7 +186,7 @@ static $k;
       switch ($e) {
          case Window::CLOSING: case Action::FIRE:
             return $this->viewHandlerSignal( $v, $e, $o, $h );
-         case View::KEYPRESS:
+         case View::KEY:
             return $this->viewHandlerKey( $v, $e, $o, $h );
          case Group::LAYOUT:
             return $this->viewHandlerLayout( $v, $e, $o, $h );
@@ -349,10 +355,10 @@ static $k;
    }
 
    /// venet-hez tartozó signal neve
-   protected function eventSignal($e) {
+   protected function eventSignal($e,$d=null) {
       switch ($e) {
          case Action::FIRE: return "clicked";
-         case View::KEYPRESS: return "key-pressed";
+         case View::KEY: return $d[0] ? "key-pressed", "key-released";
          case Window::CLOSING: return "close-request";
          default: throw new EVygu("Unknown event: $e");
       }
@@ -446,13 +452,16 @@ static $k;
          return $inv ? $ret : ! $ret;
       };
       $h->cb = $cb;
-      $h->data = $c->c;
+      $h->data = [
+         self::HANDLERPTR => $c->c,
+         self::HANDLERIDS => []
+      ];
    }      
 
    /// gombynomás kezelő
    protected function handlerCreateKey( Handler $h, $cb ) {
       $f = $this->ffi;
-      $c = $f->new( "sKeyPressCallback" );
+      $c = $f->new( "sKeyCallback" );
       $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($cb) {
          return $this->callCallback(  $cb, [$this->key( $kVal, $kCode, $state )] );
       };
@@ -477,28 +486,34 @@ static $k;
       $h->data = $c;
    }
 
+   /// signal kezelő be-vagy kikapcsolása
+   protected function handlerSignal( $v, $e, $h, $on, $data = null ) {
+      if ( ! $h ) return;
+      $f = $this->ffi;
+      if ($on) {
+         $s = $this->eventSignal($e,$data);
+         $h->data[ self::HANDLERIDS ] [] = 
+            $f->g_signal_connect_data( $v->impl, $s, 
+                  $h->data[ self::HANDLERPTR ], $data, null, 0 );
+      } else {
+         foreach ( $h->data[ self::HANDLERIDS ] as $i  )
+            $f->g_signal_handler_disconnect( $v->impl, $i );
+      }
+   }
+
    /// signal kezelő beállítása
    protected function viewHandlerSignal( $v, $e, $o, $h ) {
-      $f = $this->ffi;
-      if ($o)
-         $f->g_signal_handler_disconnect( $v->impl, $o->data[ self::HANDLERID ] );
-      if ($h) {
-         $h->data[ self::HANDLERID ] = 
-            $f->g_signal_connect_data( $v->impl, $this->eventSignal($e), 
-               $h->data, null, null, 0 );
-      }
+      $this->handlerSignal( $v, $e, $o, false );
+      $this->handlerSignal( $v, $e, $h, true );
    }
 
    /// key kezelő beállítása
    protected function viewHandlerKey( $v, $e, $o, $h ) {
       $f = $this->ffi;
       $c = $this->viewController( $v, self::KEYCTRL );
-      if ($o)
-         $f->g_signal_handler_disconnect( $c, $o->data[ self::HANDLEID ] );
-      if ($h)
-         $h->data[ self::HANDLERID ] = 
-            $f->g_signal_connect_data( $c, $this->eventSignal($e), 
-               $h->data, null, null, 0 );
+      $this->handlerSignal( $v, $e, $o, false );
+      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[0]));
+      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[1]));
    }
 
    /// layout kezelő beállítása

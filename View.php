@@ -14,7 +14,7 @@ class View {
 
    /// események
    const
-      KEYPRESS = "keyPress";
+      KEY = "key";
 
    /// a konkrét implementáció
    public $impl;
@@ -55,7 +55,7 @@ class View {
    /// egy esemény lekezelése
    function handle($e,array $args=[]) {
       if ( ! $h = $this->handler($e))
-         return;
+         return null;
       Vygu::ins()->handlerCall( $h, $args );
    }
 

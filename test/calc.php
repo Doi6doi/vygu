@@ -13,6 +13,7 @@ class Calc {
    public $curr;
    public $done;
    public $lab;
+   public $wind;
 
    function run() {
       $this->init();
@@ -32,17 +33,20 @@ class Calc {
          ->handler( Group::LAYOUT, function($g) {
             Layout::grid( $g, [Layout::COLS=>4,Layout::GAP=>4]);
          });
-      $this->lab = $w->add( new Label($this->curr) );
+      $this->lab = $w->add( new Label("0") );
       $buts = ["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"];
       foreach ($buts as $b) {
          $g->add(new Button($b))
             ->handler( Action::FIRE, function() use ($b) {
                $this->butFire($b);
-            })->handler( View::KEYPRESS, function($k) use ($buts) {
+            })->handler( View::KEY, function($k) use ($buts) {
+               if ( Key::PRESS != $k->event ) return;
                $u = Tools::utf( $k->unicode );
                if ( "\r" == $u ) $u = "=";
-               if (in_array($u,$buts))
+               if (in_array($u,$buts)) {
                   $this->butFire( $u );
+                  return true;
+               }
             });
       }
       $g->items[14]->focus();

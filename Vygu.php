@@ -58,7 +58,6 @@ class Vygu {
 
    /// handler hívása
    function handlerCall( Handler $h, array $args ) {
-Tools::debug("v hc", $h, $h->cb, $args );	   
 	  return call_user_func_array( $h->cb, $args );
    }
 

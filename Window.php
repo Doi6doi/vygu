@@ -22,9 +22,9 @@ class Window extends Group {
 
    function __construct($args) {
       parent::__construct($args);
+      $this->defSize($args);
       if ( ! $this->handler( Group::LAYOUT ) )
          $this->handler( self::LAYOUT, [Layout::class,"def"] );
-      $this->defSize($args);
       if ( Tools::g( $args, self::MAIN )) {
          $this->handler(self::CLOSING, function() { 
              Vygu::ins()->finish(); 
@@ -54,6 +54,13 @@ class Window extends Group {
          $this->coord( Layout::CENTERX, $s->coord( Layout::CONTWIDTH ) >> 1 );
       if ( ! Tools::ga( $args, [Layout::TOP, Layout::BOTTOM, Layout::CENTERY] ))
          $this->coord( Layout::CENTERY, $s->coord( Layout::CONTHEIGHT ) >> 1 );
+   }
+
+   function isProp($p) {
+      switch ($p) {
+         case self::TITLE: return true;
+         default: return parent::isProp($p);
+      }
    }
 
 }

@@ -1,3 +1,4 @@
+typedef void * HDC;
 typedef void * HWND;
 typedef void * HINSTANCE;
 typedef void * HMENU;
@@ -5,6 +6,7 @@ typedef void * HICON;
 typedef void * HCURSOR;
 typedef void * HBRUSH;
 typedef int32_t BOOL;
+typedef uint8_t BYTE;
 typedef uint32_t UINT;
 typedef int32_t LONG;
 typedef uint16_t WCHAR;
@@ -18,3 +20,4 @@ typedef const WCHAR * LPCWSTR;
 typedef LPCWSTR WSTR;
 typedef struct { LONG left; LONG top; LONG right; LONG bottom; } RECT;
 typedef uint64_t LONG_PTR;
+typedef uintptr_t UINT_PTR;

@@ -35,12 +35,10 @@ class Layout {
 
    /// középre igazítja az összeset
    static function center( Group $g ) {
-Tools::debug("l c");      
       [$cw,$ch] = $g->coords([self::CONTWIDTH,self::CONTHEIGHT]);
       $cw >>= 1;
       $ch >>= 1;
       foreach ( $g->items as $i ) {
-Tools::debug("l ci",$i->kind());      
          [$dw,$dh] = $i->coords([self::DEFWIDTH,self::DEFHEIGHT]);
          $i->coords([self::WIDTH,self::HEIGHT,self::CENTERX,self::CENTERY],
             [$dw,$dh,$cw,$ch]);

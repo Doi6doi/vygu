@@ -23,12 +23,12 @@ typedef void (*GtkCustomMeasure)( GtkWidget *, int ori, int fors,
    int * min, int *nat, int * min_base, int * nat_base );
 typedef void (*GtkCustomAllocate)( GtkWidget *,
    int width, int height, int baseline );
-typedef gboolean (*KeyPressCallback)(gpointer cont, guint keyval,
+typedef gboolean (*KeyCallback)(gpointer cont, guint keyval,
    guint keycode, guint state, gpointer data);
 
 typedef struct { int x; int y; int width; int height; } GdkRectangle;
 typedef struct { GtkCustomMeasure measure; GtkCustomAllocate allocate; } sLayoutCallback;
-typedef struct { KeyPressCallback c; } sKeyPressCallback;
+typedef struct { KeyCallback c; } sKeyCallback;
 typedef struct { SignalCallback c; } sSignalCallback;
 typedef struct { gpointer dummy1; gpointer dummy2; int dummy3; int dummy4;
   int dummy5; int dummy6; int dummy7; int dummy8;

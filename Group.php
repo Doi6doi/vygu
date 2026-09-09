@@ -30,6 +30,7 @@ class Group extends View {
    
    function add( View $v ) {
       $v->parent($this);
+      $this->handle( self::LAYOUT );
       return $v;
    }
 
@@ -38,6 +39,7 @@ class Group extends View {
       if ( $at < 0 || $this->count() <= $at )
          return;
       $this->items[$at]->parent(null);
+      $this->handle( self::LAYOUT );
    }
 
    function isHandler($h) {

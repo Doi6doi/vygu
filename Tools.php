@@ -40,6 +40,11 @@ class Tools {
          array_splice( $arr, $i, 1 );
    }
 
+   /// egész szám bitjei
+   static function bits($x,$at,$n) {
+      return $x >> $at & ((1<<$n)-1);
+   }
+
    /// egész osztás
    static function div($a,$b) {
       return intdiv($a,$b);

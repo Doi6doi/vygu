@@ -6,6 +6,10 @@ namespace vygu;
 class Key {
 
    const
+      PRESS = "press",
+      RELEASE = "release";
+
+   const
       MSHIFT = 1,
       MCTRL = 2,
       MALT = 4;
@@ -46,7 +50,8 @@ class Key {
       PGDN = 805,
       INS = 806,
       DEL = 807;
-
+      
+   public $event;
    public $unicode;
    public $special;
    public $scan;

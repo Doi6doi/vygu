@@ -1,0 +1,1 @@
+HDC CreateCompatibleDC( HDC h );
