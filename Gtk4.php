@@ -11,7 +11,7 @@ class Gtk4 extends Vygu {
    const
       KEYCTRL = "keyCtrl",
       LAYOUTMGR = "layoutMgr",
-      HANDLERID = "handlerID",
+      HANDLERIDS = "handlerIDs",
       HANDLERPTR = "handlerPtr",
       TEXTBUFFER ="textbuffer",
       TEXTITER = "textiter",
@@ -27,11 +27,16 @@ class Gtk4 extends Vygu {
       RECT = "rect";
 
    const
-      CURSORS = [
+      MALIGN = [
+         "0"=>Layout::LEFT,
+         "0.5"=>Layout::CENTERX,
+         "1"=>Layout::RIGHT
+      ],
+      MCURSOR = [
          "default"=>Cursor::DEFAULT,
          "wait"=>Cursor::WAIT
       ],
-      KEYS = [
+      MKEY = [
          0xfe03 => Key::ALTGR,
          0xff1b => Key::ESC,
          0xff50 => Key::HOME,
@@ -103,14 +108,14 @@ static $k;
    function handlerCreate(View $v, $e, callable $cb) {
       $ret = parent::handlerCreate($v,$e,$cb);
       switch ($e) {
-         case View::KEY: $this->handlerCreateKey( $ret, $cb ); break;
+         case View::KEY: $this->handlerCreateKey( $ret ); break;
          case Action::FIRE: 
-            $this->handlerCreateSignal( $ret, $cb, false );
+            $this->handlerCreateSignal( $ret, false );
          break;
          case Window::CLOSING:
-            $this->handlerCreateSignal( $ret, $cb, true );
+            $this->handlerCreateSignal( $ret, true );
          break;
-         case Group::LAYOUT: $this->handlerCreateLayout( $ret, $cb ); break;
+         case Group::LAYOUT: $this->handlerCreateLayout( $ret ); break;
          default: parent::handlerCreate($e,$cb);
       }
       return $ret;
@@ -162,10 +167,28 @@ static $k;
          if (\FFI::isNull($c))
             return null;
          $n = $f->gdk_cursor_get_name( $c );
-         return $this->cursor( $n );
+         return Tools::gg( self::MCURSOR, $n );
       } else {
          $c = $this->fromCursor( $x );
          $f->gtk_widget_set_cursor_from_name( $v->impl, $c );
+      }
+   }
+
+   /// View align jellemzője
+   function viewAlign( View $v, $x ) {
+      $f = $this->ffi;
+      $g = Tools::GET === $x;
+      switch ($k = $v->kind()) {
+         case Label::LABEL:
+            if ($g) {
+               return $f->gtk_label_set_xalign( $v->impl,
+                  Tools::g($this->map( View::ALIGN ), $x ) );
+            } else {
+               return Tools::g( self::MALIGN, 
+                  "".$f->gtk_label_get_xalign( $v->impl ));
+            }
+         break;
+         default: throw new EVygu("Cannot access $k.align");
       }
    }
 
@@ -213,6 +236,7 @@ static $k;
 
    function viewProperty( View $v, $p, $x ) {
       switch ($p) {
+         case View::ALIGN: return $this->viewAlign($v,$x);
          case View::CURSOR: return $this->viewCursor($v,$x);
          case View::STYLE: return $this->viewStyle($v,$x);
          case View::TEXT: return $this->viewText($v,$x);
@@ -358,7 +382,7 @@ static $k;
    protected function eventSignal($e,$d=null) {
       switch ($e) {
          case Action::FIRE: return "clicked";
-         case View::KEY: return $d[0] ? "key-pressed", "key-released";
+         case View::KEY: return $d[0] ? "key-pressed":"key-released";
          case Window::CLOSING: return "close-request";
          default: throw new EVygu("Unknown event: $e");
       }
@@ -444,14 +468,13 @@ static $k;
    }
 
    /// signal kezelő
-   protected function handlerCreateSignal( Handler $h, $cb, $inv ) {
+   protected function handlerCreateSignal( Handler $h, $inv ) {
       $f = $this->ffi;
       $c = $f->new( "sSignalCallback" );
-      $c->c = function( $impl, $udata ) use ($cb,$inv) {
-         $ret = $this->callCallback($cb);
+      $c->c = function( $impl, $udata ) use ($h,$inv) {
+         $ret = $this->callCallback($h->cb);
          return $inv ? $ret : ! $ret;
       };
-      $h->cb = $cb;
       $h->data = [
          self::HANDLERPTR => $c->c,
          self::HANDLERIDS => []
@@ -459,17 +482,21 @@ static $k;
    }      
 
    /// gombynomás kezelő
-   protected function handlerCreateKey( Handler $h, $cb ) {
+   protected function handlerCreateKey( Handler $h ) {
       $f = $this->ffi;
       $c = $f->new( "sKeyCallback" );
-      $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($cb) {
-         return $this->callCallback(  $cb, [$this->key( $kVal, $kCode, $state )] );
+      $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($h) {
+         return $this->callCallback( $h->cb, 
+            [$this->key( $kVal, $kCode, $state, $data )] );
       };
-      $h->data = $c->c;
+      $h->data = [
+         self::HANDLERPTR => $c->c,
+         self::HANDLERIDS => []
+      ];
    }
 
    /// layout kezelő
-   protected function handlerCreateLayout( Handler $h, $cb ) {
+   protected function handlerCreateLayout( Handler $h ) {
       $f = $this->ffi;
       $c = $f->new( "sLayoutCallback" );
       $c->measure = function( $widget, $ori, $fors, $min, $nat, 
@@ -480,8 +507,8 @@ static $k;
          $min_base[0] = -1;
          $nat_base[0] = -1;
       };
-      $c->allocate = function( $widget, $width, $height, $base ) use ($h,$cb) {
-         return $this->callCallback( $cb, [$h->view] );
+      $c->allocate = function( $widget, $width, $height, $base ) use ($h) {
+         return $this->callCallback( $h->cb, [$h->view] );
       };
       $h->data = $c;
    }
@@ -493,27 +520,28 @@ static $k;
       if ($on) {
          $s = $this->eventSignal($e,$data);
          $h->data[ self::HANDLERIDS ] [] = 
-            $f->g_signal_connect_data( $v->impl, $s, 
-                  $h->data[ self::HANDLERPTR ], $data, null, 0 );
+            $f->g_signal_connect_data( $v, $s, 
+               $f->cast("gpointer",$h->data[ self::HANDLERPTR ]), 
+               $data, null, 0 );
       } else {
          foreach ( $h->data[ self::HANDLERIDS ] as $i  )
-            $f->g_signal_handler_disconnect( $v->impl, $i );
+            $f->g_signal_handler_disconnect( $v, $i );
       }
    }
 
    /// signal kezelő beállítása
    protected function viewHandlerSignal( $v, $e, $o, $h ) {
-      $this->handlerSignal( $v, $e, $o, false );
-      $this->handlerSignal( $v, $e, $h, true );
+      $this->handlerSignal( $v->impl, $e, $o, false );
+      $this->handlerSignal( $v->impl, $e, $h, true );
    }
 
    /// key kezelő beállítása
    protected function viewHandlerKey( $v, $e, $o, $h ) {
       $f = $this->ffi;
       $c = $this->viewController( $v, self::KEYCTRL );
-      $this->handlerSignal( $v, $e, $o, false );
-      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[0]));
-      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[1]));
+      $this->handlerSignal( $c, $e, $o, false );
+      $this->handlerSignal( $c, $e, $h, true, \FFI::addr($this->yesno[0]));
+      $this->handlerSignal( $c, $e, $h, true, \FFI::addr($this->yesno[1]));
    }
 
    /// layout kezelő beállítása
@@ -543,22 +571,18 @@ static $k;
    }
 
    /// vygu billentyű 
-   protected function key( $kVal, $kCode, $state ) {
+   protected function key( $kVal, $kCode, $state, $data ) {
+      $f = $this->ffi;
       $ret = new Key();
+      $db = $f->cast("int *",$data);
+      $ret->event = $db[0] ? Key::PRESS : Key::RELEASE;
       $ret->scan = $kCode;
-      if ( ! $ret->unicode = $this->ffi->gdk_keyval_to_unicode( $kVal ))
-         $ret->special = $this->keySpecial( $kVal );
+      if ( ! $ret->unicode = $f->gdk_keyval_to_unicode( $kVal ))
+         $ret->special = Tools::gg( self::MKEY, $kVal );
       $ret->modif = $this->keyState( $state );
       return $ret;
    }
           
-   /// vygu speciális billentyű
-   protected function keySpecial( $kVal ) {
-      if ($ret = Tools::g( self::KEYS, $kVal ))
-         return $ret;
-      throw new EVygu("Unknown special key: 0x".dechex($kVal));
-   }
-
    /// módosítók
    protected function keyState( $state ) {
       $ret = 0;
@@ -571,16 +595,9 @@ static $k;
       return $ret;
    }
 
-   /// kurzor konverzió oda
-   protected function cursor( $c ) {
-      if ( $ret = Tools::g( self::CURSORS, $c ))
-         return $ret;
-      throw new EVygu("Unknown cursor: $c");
-   }
-
    protected function createMap( $name ) {
       switch ($name) {
-         case View::CURSOR: return array_flip( self::CURSORS );
+         case View::CURSOR: return array_flip( self::MCURSOR );
          default: return parent::createMap($name);
       }
    }
@@ -654,9 +671,19 @@ static $k;
 
    protected function viewCoordLast(View $v, $tmp) {
       if ($r = Tools::g($tmp,self::RECT)) {
+         $this->positiveRect($r);
          $this->ffi->gtk_widget_size_allocate( $v->impl, \FFI::addr($r), -1 );
       }
    }
+
+   /// negatív téglalap nullázása
+   protected function positiveRect($r) {
+      if (0 > $r->width)
+         $r->width = 0;
+      if (0 > $r->height)
+         $r->height = 0;
+   }
+   
 
    /// első gdk monitor
    protected function monitor($s) {

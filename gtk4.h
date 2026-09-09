@@ -49,6 +49,8 @@ void g_signal_handler_disconnect( gpointer instance, gulong handler_id );
 GdkDisplay *gdk_display_get_default(void);
 GListModel *gdk_display_get_monitors(GdkDisplay *display);
 gunichar gdk_keyval_to_unicode(guint keyval);
+float gtk_label_get_xalign(GtkWidget *);
+void gtk_label_set_xalign(GtkWidget *, float);
 void gdk_monitor_get_geometry(GdkMonitor *monitor, GdkRectangle *geometry );
 GtkWidget * gtk_button_new();
 char *gtk_button_get_label(GtkWidget *button);

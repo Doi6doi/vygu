@@ -17,6 +17,13 @@ class Tools {
       return null;
    }
 
+   /// arrayget vagy kivétel
+   static function gg($arr,$fld) {
+      if ( is_array($arr) && array_key_exists($fld,$arr))
+         return $arr[$fld];
+      throw new EVygu("Unknown field: $fld");
+   }
+
    /// első lehetséges array_get
    static function ga($arr,array $flds) {
       if ( ! is_array($arr)) return null;

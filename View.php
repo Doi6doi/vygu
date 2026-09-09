@@ -34,6 +34,7 @@ class View {
    }
 
    function __destruct() {
+      $this->handlers = [];
       Vygu::ins()->viewDestroy($this);
    }
 
