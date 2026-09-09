@@ -3,7 +3,7 @@
 namespace vygu;
 
 /// gomb
-class Button extends View {
+class Button extends Group {
 
    const
       BUTTON = "button";
@@ -13,5 +13,16 @@ class Button extends View {
    function kind() { return self::BUTTON; }
 
    function text($x=Tools::GET) { return $this->prop(self::TEXT,$x); }
+
+   function isProp($p) {
+      switch ($p) {
+         case self::STYLE:
+         case self::TEXT:
+            return true;
+         default:
+            return parent::isProp($p);
+      }
+   }
+
 
 }

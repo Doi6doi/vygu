@@ -70,6 +70,11 @@ class Vygu {
    function menuAdd(Menu $m, $x) {
       throw new EVygu("Cannot add ".Tools::type($x)." to menu");
    }
+   
+   /// view újrarajzolása szükséges
+   function viewInvalidate(View $v) {
+	   throw new EVygu("Cannot invalidate ".$v->kind());
+   }
 
    /// view szülőjének beállítása
    function viewParent( View $v, ?Group $g ) {

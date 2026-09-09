@@ -21,13 +21,6 @@ class WinApi extends Vygu {
       TLAST = "tLast",
       TRECT = "tRect";
 
-   /// mapek
-   const
-     CURSORS = [
-         0x7f00=>Cursor::DEFAULT,
-         0x7f02=>Cursor::WAIT
-     ];
-
    const
       BN_CLICKED = 0,
    
@@ -72,8 +65,40 @@ class WinApi extends Vygu {
       VK_RCONTROL = 0xa3,
       VK_LMENU   = 0xa4,  
       VK_RMENU   = 0xa5,  
+   
+      WM_DESTROY = 2,
+      WM_SIZE = 5,
+      WM_CLOSE = 0x10,
+      WM_QUIT = 0x12,
+      WM_KEYDOWN = 0x100,
+      WM_KEYUP = 0x101,
+      WM_COMMAND =0x111,
 
-      VK_SPECS = [ 
+      WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY, 
+         self::WM_KEYDOWN, self::WM_KEYUP, self::WM_SIZE ],
+      
+      WS_VISIBLE = 0x10000000,
+      WS_CHILD = 0x40000000,
+      WS_POPUP = 0x80000000,
+      WS_OVERLAPPEDWINDOW = 0xcf0000,
+
+      SPI_GETWORKAREA = 0x30,
+      
+      SW_HIDE = 0,
+      SW_SHOW = 5;
+
+   /// mapek
+   const
+      MALIGN = [
+         0 => Layout::LEFT,
+         1 => Layout::CENTERX,
+         2 => Layout::RIGHT
+      ],
+      MCURSORS = [
+         0x7f00=>Cursor::DEFAULT,
+         0x7f02=>Cursor::WAIT
+      ],
+      MSPECS = [ 
          self::VK_CAPITAL => Key::CAPS,
          self::VK_ESCAPE => Key::ESC,
          self::VK_PRIOR => Key::PGUP,
@@ -105,28 +130,7 @@ class WinApi extends Vygu {
          self::VK_RCONTROL => Key::RCTRL,
          self::VK_LMENU => Key::ALT,
          self::VK_RMENU => Key::ALTGR
-      ],
-   
-      WM_DESTROY = 2,
-      WM_SIZE = 5,
-      WM_CLOSE = 0x10,
-      WM_QUIT = 0x12,
-      WM_KEYDOWN = 0x100,
-      WM_KEYUP = 0x101,
-      WM_COMMAND =0x111,
-
-      WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY, 
-         self::WM_KEYDOWN, self::WM_KEYUP, self::WM_SIZE ],
-      
-      WS_VISIBLE = 0x10000000,
-      WS_CHILD = 0x40000000,
-      WS_POPUP = 0x80000000,
-      WS_OVERLAPPEDWINDOW = 0xcf0000,
-
-      SPI_GETWORKAREA = 0x30,
-      
-      SW_HIDE = 0,
-      SW_SHOW = 5;
+      ];
       
    /// user32.dll
    protected $ffu;
@@ -343,6 +347,7 @@ class WinApi extends Vygu {
          case View::VISIBLE: return $this->viewVisible($v,$x);
          case View::TEXT: case Window::TITLE: 
             return $this->viewText($v,$x);
+         case View::ALIGN: return $this->viewAlign($v,$x);
       }
       return parent::viewProperty($v,$p,$x);
    }
@@ -362,7 +367,7 @@ class WinApi extends Vygu {
       }
    }
 
-   /// ablak elrejtése, vagy megjelenítése
+   /// view elrejtése, vagy megjelenítése
    function viewVisible($v,$x) {
       $u = $this->ffu;
       if (Tools::GET === $x)
@@ -374,21 +379,46 @@ class WinApi extends Vygu {
       }
    }
 
+   /// view igazítás
+   function viewAlign($v,$x) {
+      $s = $this->viewStyleWord($v);
+      if (Tools::GET === $x) {
+         return Tools::g( self::MALIGN, Tools::bits($s,0,2));
+      } else {
+         $s = Tools::withBits( $s, 0, 2, 
+            Tools::g($this->map(View::ALIGN),$x));
+         $this->viewStyleWord($v,$s);
+      }
+   }
+
+   /// stílus szó írás vagy olvasás
+   function viewStyleWord($v,$x=Tools::GET) {
+      $u = $this->ffu;
+      if (Tools::GET === $x)
+         return $u->GetWindowLongPtrW( $v->impl, self::GWL_STYLE );
+      $u->SetWindowLongPtrW( $v->impl, self::GWL_STYLE, $x );
+      $v->invalidate();
+   }
+
    function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
+   }
+
+   function viewInvalidate(View $v) {
+      $this->ffu->InvalidateRect($v->impl,null,false);
    }
 
    function viewParent( View $v, ?Group $g ) {
       $u = $this->ffu;
       $vi = $v->impl;
-      $s = $u->GetWindowLongPtrW( $vi, self::GWL_STYLE );
+      $s = $this->viewStyleWord($v);
       if ($g) {
-         $u->SetWindowLongPtrW( $vi, self::GWL_STYLE, 
-            $s | self::WS_CHILD & ! self::WS_POPUP );
+         $s = $s | self::WS_CHILD & ~ self::WS_POPUP;
+         $this->viewStyleWord($v,$s);
          $u->SetParent($vi, $g->impl);
       } else {
+         $s = $s | self::WS_POPUP & ~ self::WS_CHILD;
+         $this->viewStyleWord($v,$s);
          $u->SetParent($vi, null);
-         $u->SetWindowLongPtrW( $vi, self::GWL_STYLE, 
-            $s | self::WS_POPUP & ! self::WS_CHILD );
       }
    }
 
@@ -548,7 +578,7 @@ class WinApi extends Vygu {
       $ret->modif = $this->keyModif();
       $ret->scan = Tools::bits($lparam,16,8);
       $ret->unicode = $this->keyUnicode( $wparam, $ret->scan );
-      $ret->special = Tools::g( self::VK_SPECS, intval( $wparam ) );
+      $ret->special = Tools::g( self::MSPECS, intval( $wparam ) );
       return $ret;
    }
 
@@ -643,7 +673,8 @@ class WinApi extends Vygu {
       if ($r = Tools::g($tmp,self::TRECT)) {
          $this->checkW( $this->ffu->MoveWindow( $v->impl, 
             $r->left, $r->top, $r->right-$r->left, $r->bottom-$r->top,
-            true ), "Could not move window");
+            false ), "Could not move window");
+         $this->viewInvalidate($v);
       }
    }
 
@@ -663,7 +694,8 @@ class WinApi extends Vygu {
 
    protected function createMap( $name ) {
       switch ($name) {
-         case View::CURSOR: return array_flip( self::CURSORS );
+         case View::ALIGN: return array_flip( self::MALIGN );
+         case View::CURSOR: return array_flip( self::MCURSORS );
          default: return parent::createMap($name);
       }
    }

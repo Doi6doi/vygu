@@ -7,6 +7,7 @@ class View {
 
    /// propertyk
    const
+      ALIGN = "align",
       CURSOR = "cursor",
       STYLE = "style",
       TEXT = "text",
@@ -37,6 +38,11 @@ class View {
    }
 
    function kind() { Tools::notImpl($this,__FUNCTION__); }
+
+   /// újrarajzolás szükséges
+   function invalidate() {
+      Vygu::ins()->viewInvalidate($this);
+   }
 
    /// eseménykezelő
    function handler($e,$x=null) {
@@ -102,7 +108,6 @@ class View {
    function isProp($p) {
       switch ($p) {
          case self::CURSOR:
-         case self::TEXT:
          case self::VISIBLE:
             return true;
          default:

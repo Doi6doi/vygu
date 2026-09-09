@@ -45,6 +45,12 @@ class Tools {
       return $x >> $at & ((1<<$n)-1);
    }
 
+   /// egséz szám bizonyos bitekkel beállítva
+   static function withBits($x,$at,$n,$v) {
+      $mask = ((1<<$n)-1) << $at;
+      return ($x & ~ $mask) | (($v << $at) & $mask);
+   }
+
    /// egész osztás
    static function div($a,$b) {
       return intdiv($a,$b);

@@ -23,6 +23,7 @@ UINT_PTR GetWindowLongPtrW(HWND, int nIndex);
 BOOL GetWindowRect(HWND, RECT *lpRect);
 int GetWindowTextW( HWND, WCHAR * s, int nMaxCount );
 int GetWindowTextLengthW( HWND );
+BOOL InvalidateRect( HWND, const RECT *, BOOL erase );
 BOOL IsWindowVisible( HWND );
 HCURSOR LoadCursorW(HINSTANCE hInstance, WSTR lpCursorName);
 BOOL MoveWindow(HWND, int X, int Y, int width, int height, BOOL repaint);

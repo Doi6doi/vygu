@@ -8,6 +8,9 @@ require_once(__DIR__."/../autoload.php" );
 
 class Calc {
 
+   const
+      BUTS = ["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"];
+
    public $old;
    public $op;
    public $curr;
@@ -28,29 +31,31 @@ class Calc {
       $w = $this->wind = (new Window([Window::TITLE=>"Calculator",Window::MAIN=>true]))
          ->handler( Group::LAYOUT, function ($g) {
             Layout::fill( $g, [Layout::DIR=>Layout::BOTTOM, Layout::GAP=>4] );
-         });
+         })->handler( View::KEY, [$this,"key"]);
       $g = $w->add(new Group())
          ->handler( Group::LAYOUT, function($g) {
             Layout::grid( $g, [Layout::COLS=>4,Layout::GAP=>4]);
          });
-      $this->lab = $w->add( new Label("0") );
-      $buts = ["7","8","9","/","4","5","6","*","1","2","3","-","0",".","=","+"];
-      foreach ($buts as $b) {
+      $this->lab = $w->add( new Label([View::TEXT=>"0",View::ALIGN=>Layout::CENTERX]) );
+      foreach (self::BUTS as $b) {
          $g->add(new Button($b))
             ->handler( Action::FIRE, function() use ($b) {
                $this->butFire($b);
-            })->handler( View::KEY, function($k) use ($buts) {
-               if ( Key::PRESS != $k->event ) return;
-               $u = Tools::utf( $k->unicode );
-               if ( "\r" == $u ) $u = "=";
-               if (in_array($u,$buts)) {
-                  $this->butFire( $u );
-                  return true;
-               }
-            });
+            })->handler( View::KEY, [$this,"key"] );
       }
       $g->items[14]->focus();
       $this->show();
+   }
+
+   /// billentyű handler
+   function key($k) {
+      if ( Key::PRESS != $k->event ) return;
+      $u = Tools::utf( $k->unicode );
+      if ( "\r" == $u ) $u = "=";
+      if (in_array($u,self::BUTS)) {
+         $this->butFire( $u );
+            return true;
+      }
    }
 
    function butFire( $t ) {
