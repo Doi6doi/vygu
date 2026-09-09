@@ -1,0 +1,13 @@
+{
+   "name":"Doi6doi/vygu",
+   "description": "GUI support for PHP with various backends",
+   "type":"library",
+   "license":"MIT",
+   "require": {
+      "php":">=7.4",
+      "ext-ffi":"*"
+   },
+   "autoload":{
+      "files": ["autoload.php"]
+   }
+}
