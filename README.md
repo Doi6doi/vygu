@@ -2,8 +2,6 @@
 
 A platform independent library to add GUI support for PHP
 
-Needs php with 
-
-At the moment hello world and calculator works with gtk4 on linux. More to come.
+Read the [Wiki](https://github.com/Doi6doi/vygu/wiki) for more information.
 
 
