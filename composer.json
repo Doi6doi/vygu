@@ -1,5 +1,5 @@
 {
-   "name":"Doi6doi/vygu",
+   "name":"doi6doi/vygu",
    "description": "GUI support for PHP with various backends",
    "type":"library",
    "license":"MIT",
