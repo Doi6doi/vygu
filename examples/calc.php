@@ -6,6 +6,7 @@ require_once(__DIR__."/../autoload.php" );
 
 (new Calc())->run();
 
+/// a simple vygu calculator
 class Calc {
 
    const
@@ -23,12 +24,13 @@ class Calc {
       Vygu::ins()->run();
    }
 
+   /// builds the window
    function init() {
       $this->old = null;
       $this->op = null;
       $this->curr = null;
       $this->done = false;
-      $w = $this->wind = (new Window([Window::TITLE=>"Calculator",Window::MAIN=>true]))
+      $w = $this->wind = (new Window([Window::TITLE=>"Calculator", Window::MAIN=>true]))
          ->handler( Group::LAYOUT, function ($g) {
             Layout::fill( $g, [Layout::DIR=>Layout::BOTTOM, Layout::GAP=>4] );
          })->handler( View::KEY, [$this,"key"]);
@@ -47,7 +49,7 @@ class Calc {
       $this->show();
    }
 
-   /// billentyű handler
+   /// keyboard handler
    function key($k) {
       if ( Key::PRESS != $k->event ) return;
       $u = Tools::utf( $k->unicode );
@@ -58,6 +60,7 @@ class Calc {
       }
    }
 
+   /// fire handler for all buttons
    function butFire( $t ) {
       if ("0" <= $t && $t <= "9") {
          if (null === $this->op)
@@ -76,6 +79,7 @@ class Calc {
       $this->show();
    }
 
+   /// a calculation for a non-number key
    function calc() {
       switch ($this->op) {
          case "+": $this->old += $this->curr; break;
@@ -90,6 +94,7 @@ class Calc {
       $this->curr = null;
    }
 
+   /// show the current operation in label
    function show() {
       $ret = [];
       if (null !== $this->old)
