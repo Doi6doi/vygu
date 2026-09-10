@@ -2,16 +2,18 @@
 
 namespace vygu;
 
-/// gomb
+/// A pressable button [Group]
 class Button extends Group {
 
    const
+      /// Kind constant
       BUTTON = "button";
 
    function defArg() { return self::TEXT; }
 
    function kind() { return self::BUTTON; }
 
+   /// Text property
    function text($x=Tools::GET) { return $this->prop(self::TEXT,$x); }
 
    function isProp($p) {
@@ -23,6 +25,5 @@ class Button extends Group {
             return parent::isProp($p);
       }
    }
-
 
 }

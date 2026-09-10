@@ -2,38 +2,64 @@
 
 namespace vygu;
 
+/// Class for different [Group] layouts
+/// And coordinate constants.
+/// Coordinates are usually in pixels, and
+/// are relative to the parent's client area
 class Layout {
 
+   /// Coordinates
    const
+      /// Distance between baseline and top
       ASCENT = "ascent",
+      /// Bottom side Y coordinate (excluded)
       BOTTOM = "bottom",
+      /// Center X coordinate
       CENTERX = "centerX",
+      /// Center Y coordinate
       CENTERY = "centerY",
+      /// Width of a [Groups]'s client area
       CONTWIDTH = "contWidth",
+      /// Height of a [Groups]'s client area
       CONTHEIGHT = "contHeight",
+      /// Default (preferred) width
       DEFWIDTH = "defWidth",
+      /// Default (preferred) height
       DEFHEIGHT = "defHeight",
+      /// Distance between baseline and bottom
       DESCENT = "descent",
+      /// Height of View
       HEIGHT = "height",
+      /// Left side X coordinate
       LEFT = "left",
+      /// Minimal possible width
       MINWIDTH = "minWidth",
+      /// Minimal possible height
       MINHEIGHT = "minHeight",
+      /// Right side X coordinate (excluded)
       RIGHT = "right",
+      /// Top side Y coordinate
       TOP = "top",
+      /// Width os
       WIDTH = "width";
 
+   /// Layout function arguments
    const
+      /// Number of columns in `grid` layout
       COLS =  "cols",
+      /// Direction of filling in `fill` layout
       DIR  = "dir",
+      /// Space between parts and edge
       GAP = "gap",
+      /// Number of rows in `grid` layout
       ROWS = "rows";
 
-   /// alap igazítás, egy oszlopos, gap:2
+   /// Default layout for [Group]s: `grid[COLS=>1, GAP=>2]`
    static function def( Group $g ) {
       return self::grid( $g, [self::COLS=>1, self::GAP=>2] );
    }
 
-   /// középre igazítja az összeset
+   /// Puts all contained Views in the center
    static function center( Group $g ) {
       [$cw,$ch] = $g->coords([self::CONTWIDTH,self::CONTHEIGHT]);
       $cw >>= 1;
@@ -45,7 +71,10 @@ class Layout {
       }
    }
 
-   /// az első kitölti a helyet DIR irányba, a többi GAP-ekkel az ellenkező irányba
+   /// Puts 0th View in `DIR` direction, using all possible space
+   /// And the remaining ones to the other side
+   /// \param `DIR` The direction to fill
+   /// \param `GAP` Space between items
    static function fill( Group $g, array $args = [] ) {
       $dir = Tools::gd( $args, self::DIR, self::TOP );
       $gap = Tools::gd( $args, self::GAP, 0 );
@@ -91,7 +120,10 @@ class Layout {
       }
    }
 
-   /// rács elrendezés
+   /// Grid placement with same sized cells
+   /// \param `ROWS` Number of rows
+   /// \param `COLS` Number of columns
+   /// \param `GAP` Space between items
    static function grid( Group $g, array $args = [] ) {
       $rows = Tools::g( $args, self::ROWS );
       $cols = Tools::g( $args, self::COLS );

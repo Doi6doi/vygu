@@ -2,10 +2,11 @@
 
 namespace vygu;
 
-/// Gtk4 rendszer
+/// Gtk4 engine
 class Gtk4 extends Vygu {
 
    const
+      /// Kind name
       GTK4 = "gtk4";
 
    const
@@ -19,7 +20,7 @@ class Gtk4 extends Vygu {
       TEXTVIEW = "textview",
       WINDOWBOX = "windowbox";
 
-   /// temp részek
+   // temp részek
    const
       LAST = "last",
       MESX = "mesx",
@@ -71,17 +72,17 @@ class Gtk4 extends Vygu {
          0xffeb => Key::META
       ];
 
-   /// ffi kapcsolat
+   // ffi kapcsolat
    protected $ffi;
-   /// kivétel eseménykezelőben
+   // kivétel eseménykezelőben
    protected $err;
-   /// alloc lekéréshez
+   // alloc lekéréshez
    protected $allo;
-   /// rect lekéréshez
+   // rect lekéréshez
    protected $rect;
-   /// intek visszaadásához
+   // intek visszaadásához
    protected $ints;
-   /// igen/nem konstansok
+   // igen/nem konstansok
    protected $yesno;
 
    function __construct($args) {
@@ -99,7 +100,6 @@ class Gtk4 extends Vygu {
    }
 
    function runStep( $wait ) {
-static $k;
       if ( $ret = $this->ffi->g_main_context_iteration(null,$wait))
          $this->checkErr();
       return $ret;
@@ -109,7 +109,7 @@ static $k;
       $ret = parent::handlerCreate($v,$e,$cb);
       switch ($e) {
          case View::KEY: $this->handlerCreateKey( $ret ); break;
-         case Action::FIRE: 
+         case Action::FIRE:
             $this->handlerCreateSignal( $ret, false );
          break;
          case Window::CLOSING:
@@ -151,7 +151,7 @@ static $k;
    function styleCreate( Style $s ) {
    }
 
-   /// view style jellemzője
+   // View style jellemzője
    function viewStyle( View $v, $x ) {
       switch ( $k = $v->kind() ) {
          case Rich::RICH: return $this->richStyle( $v, $x );
@@ -159,7 +159,7 @@ static $k;
       }
    }
 
-   /// View kurzor jellemzője
+   // View kurzor jellemzője
    function viewCursor( View $v, $x ) {
       $f = $this->ffi;
       if ( Tools::GET === $x ) {
@@ -174,7 +174,7 @@ static $k;
       }
    }
 
-   /// View align jellemzője
+   // View align jellemzője
    function viewAlign( View $v, $x ) {
       $f = $this->ffi;
       $g = Tools::GET === $x;
@@ -184,7 +184,7 @@ static $k;
                return $f->gtk_label_set_xalign( $v->impl,
                   Tools::g($this->map( View::ALIGN ), $x ) );
             } else {
-               return Tools::g( self::MALIGN, 
+               return Tools::g( self::MALIGN,
                   "".$f->gtk_label_get_xalign( $v->impl ));
             }
          break;
@@ -192,13 +192,12 @@ static $k;
       }
    }
 
-   /// richedit stílusa
+   // richedit stílusa
    function richStyle( Rich $r, $s ) {
       if ( Tools::GET === $s )
          return $this->richStyleRead( $r );
    }
 
-   /// view felszámolás
    function viewDestroy( View $v ) {
       if ( $v instanceof Group )
          $v->clear();
@@ -213,12 +212,12 @@ static $k;
             return $this->viewHandlerKey( $v, $e, $o, $h );
          case Group::LAYOUT:
             return $this->viewHandlerLayout( $v, $e, $o, $h );
-         default: 
+         default:
             return parent::viewHandler( $v, $e, $o, $h );
       }
    }
 
-   /// insert művelet
+   // insert művelet
    function viewInsert( View $v, $at, $x ) {
       $f = $this->ffi;
       switch ($k = $v->kind()) {
@@ -257,7 +256,7 @@ static $k;
       return parent::viewProperty($v,$p,$x);
    }
 
-   /// view koordináta
+   // view koordináta
    function viewCoord( View $v, $c, $x, & $tmp ) {
       $f = $this->ffi;
       $im = $v->impl;
@@ -314,7 +313,7 @@ static $k;
          if ( Tools::g($tmp,self::LAST) )
             $this->viewCoordLast( $v, $tmp );
       }
-   }      
+   }
 
    function viewParent( View $v, ?Group $g ) {
 	  $f = $this->ffi;
@@ -323,12 +322,12 @@ static $k;
 	  switch ($g->kind()) {
          case Group::GROUP:
          case Window::WINDOW:
-            return $f->gtk_widget_set_parent( $v->impl, 
+            return $f->gtk_widget_set_parent( $v->impl,
                $this->contImpl( $g ) );
          default: parent::viewParent( $v, $g );
       }
    }
-		   
+
    function viewFocus(View $v) {
       return $this->ffi->gtk_widget_grab_focus( $this->realImpl( $v ) );
    }
@@ -349,7 +348,7 @@ static $k;
          default:
             return parent::screenCoord($s,$c);
       }
-      $f->gdk_monitor_get_geometry( $this->monitor($s), 
+      $f->gdk_monitor_get_geometry( $this->monitor($s),
          \FFI::addr( $this->rect ));
       switch ($c) {
          case Layout::WIDTH: return $this->rect->width;
@@ -357,9 +356,8 @@ static $k;
       }
       return parent::screenCoord($s,$c);
    }
-   
 
-   /// a valódi widget impl
+   // a valódi widget impl
    protected function realImpl( View $v ) {
       switch ($v->kind()) {
          case Memo::MEMO:
@@ -369,7 +367,7 @@ static $k;
       }
    }
 
-   /// a konténer impl
+   // a konténer impl
    protected function contImpl( Group $g ) {
       switch ($g->kind()) {
          case Window::WINDOW:
@@ -378,7 +376,7 @@ static $k;
       }
    }
 
-   /// venet-hez tartozó signal neve
+   // event-hez tartozó signal neve
    protected function eventSignal($e,$d=null) {
       switch ($e) {
          case Action::FIRE: return "clicked";
@@ -388,7 +386,7 @@ static $k;
       }
    }
 
-   /// a globális $err ellenőrzése, és dobása
+   // a globális $err ellenőrzése, és dobása
    protected function checkErr() {
       if ( $e = $this->err ) {
          $this->err = null;
@@ -396,7 +394,7 @@ static $k;
       }
    }
 
-   /// valamilyen view text-je
+   // valamilyen view text-je
    protected function viewText($v,$x) {
       $im = $v->impl;
       $f = $this->ffi;
@@ -424,12 +422,11 @@ static $k;
                return $f->gtk_text_buffer_set_text( $b, "$x", -1 );
             }
          break;
-               
       }
       return parent::viewProperty($v,View::TEXT,$x);
    }
 
-   /// richedit készítése és összerakása
+   // richedit készítése és összerakása
    protected function createMemo(View $r) {
       $f = $this->ffi;
       $s = $f->gtk_scrolled_window_new();
@@ -450,7 +447,7 @@ static $k;
       return $s;
    }
 
-   /// bufferen belüli mozgás
+   // bufferen belüli mozgás
    protected function bufferMove( $b, $at, $i ) {
       $f = $this->ffi;
       if ( false === $at )
@@ -461,13 +458,13 @@ static $k;
          $f->gtk_text_buffer_get_iter_at_offset( $b, $i, $at );
    }
 
-   /// floating reference sink
+   // floating reference sink
    protected function sink( $x ) {
       $this->ffi->g_object_ref_sink( $x );
       return $x;
    }
 
-   /// signal kezelő
+   // signal kezelő
    protected function handlerCreateSignal( Handler $h, $inv ) {
       $f = $this->ffi;
       $c = $f->new( "sSignalCallback" );
@@ -479,14 +476,14 @@ static $k;
          self::HANDLERPTR => $c->c,
          self::HANDLERIDS => []
       ];
-   }      
+   }
 
-   /// gombynomás kezelő
+   // gombynomás kezelő
    protected function handlerCreateKey( Handler $h ) {
       $f = $this->ffi;
       $c = $f->new( "sKeyCallback" );
       $c->c = function( $ctrl, $kVal, $kCode, $state, $data ) use ($h) {
-         return $this->callCallback( $h->cb, 
+         return $this->callCallback( $h->cb,
             [$this->key( $kVal, $kCode, $state, $data )] );
       };
       $h->data = [
@@ -495,12 +492,12 @@ static $k;
       ];
    }
 
-   /// layout kezelő
+   // layout kezelő
    protected function handlerCreateLayout( Handler $h ) {
       $f = $this->ffi;
       $c = $f->new( "sLayoutCallback" );
-      $c->measure = function( $widget, $ori, $fors, $min, $nat, 
-         $min_base, $nat_base ) 
+      $c->measure = function( $widget, $ori, $fors, $min, $nat,
+         $min_base, $nat_base )
       {
          $min[0] = 0;
          $nat[0] = 0;
@@ -513,15 +510,15 @@ static $k;
       $h->data = $c;
    }
 
-   /// signal kezelő be-vagy kikapcsolása
+   // signal kezelő be-vagy kikapcsolása
    protected function handlerSignal( $v, $e, $h, $on, $data = null ) {
       if ( ! $h ) return;
       $f = $this->ffi;
       if ($on) {
          $s = $this->eventSignal($e,$data);
-         $h->data[ self::HANDLERIDS ] [] = 
-            $f->g_signal_connect_data( $v, $s, 
-               $f->cast("gpointer",$h->data[ self::HANDLERPTR ]), 
+         $h->data[ self::HANDLERIDS ] [] =
+            $f->g_signal_connect_data( $v, $s,
+               $f->cast("gpointer",$h->data[ self::HANDLERPTR ]),
                $data, null, 0 );
       } else {
          foreach ( $h->data[ self::HANDLERIDS ] as $i  )
@@ -529,13 +526,13 @@ static $k;
       }
    }
 
-   /// signal kezelő beállítása
+   // signal kezelő beállítása
    protected function viewHandlerSignal( $v, $e, $o, $h ) {
       $this->handlerSignal( $v->impl, $e, $o, false );
       $this->handlerSignal( $v->impl, $e, $h, true );
    }
 
-   /// key kezelő beállítása
+   // key kezelő beállítása
    protected function viewHandlerKey( $v, $e, $o, $h ) {
       $f = $this->ffi;
       $c = $this->viewController( $v, self::KEYCTRL );
@@ -544,17 +541,17 @@ static $k;
       $this->handlerSignal( $c, $e, $h, true, \FFI::addr($this->yesno[1]));
    }
 
-   /// layout kezelő beállítása
+   // layout kezelő beállítása
    protected function viewHandlerLayout( $v, $e, $o, $h ) {
       $f = $this->ffi;
       if ($h)
-         $cl = $f->gtk_custom_layout_new( null, $h->data->measure, 
+         $cl = $f->gtk_custom_layout_new( null, $h->data->measure,
             $h->data->allocate );
          else $cl = null;
       $f->gtk_widget_set_layout_manager( $this->contImpl($v), $cl );
    }
 
-   /// cotroller gyártása view-hoz ha kell
+   // cotroller gyártása view-hoz ha kell
    protected function viewController( $v, $c ) {
       if ( ! $ret = Tools::g( $v->data, $c )) {
          $f = $this->ffi;
@@ -562,7 +559,7 @@ static $k;
             case self::KEYCTRL:
                $ret = $f->gtk_event_controller_key_new();
                $f->gtk_widget_add_controller( $this->realImpl( $v ), $ret );
-            break;   
+            break;
             default: throw new EVygu("Unknown controller: $c");
          }
          $v->data[ $c ] = $ret;
@@ -570,7 +567,7 @@ static $k;
       return $ret;
    }
 
-   /// vygu billentyű 
+   // vygu billentyű
    protected function key( $kVal, $kCode, $state, $data ) {
       $f = $this->ffi;
       $ret = new Key();
@@ -582,8 +579,8 @@ static $k;
       $ret->modif = $this->keyState( $state );
       return $ret;
    }
-          
-   /// módosítók
+
+   // módosítók
    protected function keyState( $state ) {
       $ret = 0;
       if ($state & 1)
@@ -602,14 +599,14 @@ static $k;
       }
    }
 
-   /// kurzor konverzió vissza
+   // kurzor konverzió vissza
    protected function fromCursor( $c ) {
       if ( $ret = Tools::g( $this->map( View::CURSOR ), $c ))
          return $ret;
       throw new EVygu("Unknown cursor: $c");
    }
 
-   /// callback hívása, a kivétel eltárolása
+   // callback hívása, a kivétel eltárolása
    protected function callCallback($cb, array $args = [] ) {
       try {
          return call_user_func_array( $cb, $args );
@@ -618,7 +615,7 @@ static $k;
       }
    }
 
-   /// speciális view koordináta
+   // speciális view koordináta
    protected function viewCoordSpec( $v, $c, $x, & $tmp ) {
       $f = $this->ffi;
       $g = Tools::GET === $x;
@@ -639,9 +636,9 @@ static $k;
          break;
       }
       return parent::viewCoord($v, $c, $x, $tmp);
-   }      
+   }
 
-   /// temp adat $v-ez
+   // temp adat $v-ez
    protected function temp(View $v, $kind, & $tmp ) {
       $f = $this->ffi;
       if (true === $tmp)
@@ -671,21 +668,11 @@ static $k;
 
    protected function viewCoordLast(View $v, $tmp) {
       if ($r = Tools::g($tmp,self::RECT)) {
-         $this->positiveRect($r);
          $this->ffi->gtk_widget_size_allocate( $v->impl, \FFI::addr($r), -1 );
       }
    }
 
-   /// negatív téglalap nullázása
-   protected function positiveRect($r) {
-      if (0 > $r->width)
-         $r->width = 0;
-      if (0 > $r->height)
-         $r->height = 0;
-   }
-   
-
-   /// első gdk monitor
+   // első gdk monitor
    protected function monitor($s) {
       $f = $this->ffi;
       $mts = $f->gdk_display_get_monitors($s->data);

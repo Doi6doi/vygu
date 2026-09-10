@@ -2,15 +2,18 @@
 
 namespace vygu;
 
+/// A simple static Label [View]
 class Label extends View {
 
    const
+      /// Kind name
       LABEL = "label";
 
    function defArg() { return self::TEXT; }
 
    function kind() { return self::LABEL; }
 
+   /// [View]::TEXT property
    function text($x=Tools::GET) { return Vygu::ins()->viewProperty($this,self::TEXT,$x); }
 
    function isProp($p) {

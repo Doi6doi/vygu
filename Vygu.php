@@ -2,27 +2,33 @@
 
 namespace vygu;
 
+/// The cardinal class for a vygu application.
+/// It is a singleton, which loads an appropriate
+/// engine on first use.
 class Vygu {
 
    const
+      /// The engine argument for `ins()`
       ENGINE = "engine",
       OVER = "over";
 
-   /// singleton
+   /// Get singleton value
+   /// \param $args (`ENGINE`: [Gtk4]`::GTK4` | [WinApi]::`WINAPI )
+   /// \return The singleton
    static function ins( $args=[] ) {
       if ( ! self::$ins )
          self::$ins = self::create( $args );
       return self::$ins;
    }
 
-   /// singleton változó
+   // singleton változó
    protected static $ins;
-   /// hashek
+   // hashek
    protected $maps;
-   /// kilépő bool
+   // kilépő bool
    protected $over;
 
-   /// új vygu készítés
+   // új vygu készítés
    protected static function create( $args ) {
 	  if ( ! $e = Tools::g( $args, self::ENGINE )) {
 		 $iz = 8*PHP_INT_SIZE;
@@ -39,59 +45,57 @@ class Vygu {
 	  }
    }
 
-   /// kezelők
-   protected $handlers;
-
    function __construct($args) {
-	  $this->maps = [];
-      $this->handlers = [];
+      $this->maps = [];
    }
 
-   /// view fókuszálása
+   /// Run the even loop until termination
+   function run() {
+      while (! $this->runOver()) {
+         $this->runStep( true );
+      }
+   }
+
+   /// Do a single step on the event loop
+   /// \param $wait Wait for at least one event to happen (bool)
+   /// \return Has there been any events (bool)
+   function runStep( $wait ) { Tools::notImpl( $this, __FUNCTION__ ); }
+
+   // view fókuszálása
    function viewFocus(View $v) {
       throw new EVygu("Cannot focus ".$v->kind());
    }
 
-   /// képernyő létrehozása
+   // képernyő létrehozása
    function screenCreate( Screen $s ) {
    }
 
-   /// handler hívása
+   // handler hívása
    function handlerCall( Handler $h, array $args ) {
 	  return call_user_func_array( $h->cb, $args );
    }
 
-   /// menü létrehozása
+   // menü létrehozása
    function menuCreate(Menu $m) {
       throw new EVygu("Cannot create menu");
    }
 
-   /// hozzáadás menühöz
+   // hozzáadás menühöz
    function menuAdd(Menu $m, $x) {
       throw new EVygu("Cannot add ".Tools::type($x)." to menu");
    }
-   
-   /// view újrarajzolása szükséges
+
+   // view újrarajzolása szükséges
    function viewInvalidate(View $v) {
 	   throw new EVygu("Cannot invalidate ".$v->kind());
    }
 
-   /// view szülőjének beállítása
+   // view szülőjének beállítása
    function viewParent( View $v, ?Group $g ) {
       throw new EVygu("Cannot set ".$v->kind()." parent to ".Tools::str($g));
    }
 
-   /// esemény kezelése
-   function handle($kind) {
-      if ( $h = Tools::g( $this->handlers, $kind )) {
-         $a = func_get_args();
-         array_shift( $a );
-         return call_user_func_array( $h, $a );
-      }
-      return null;
-   }
-
-   /// handler készítés
+   // handler készítés
    function handlerCreate(View $v, $e, callable $cb) {
       $ret = new Handler();
       $ret->view = $v;
@@ -99,60 +103,50 @@ class Vygu {
       return $ret;
    }
 
-   /// képernyő koordináta lekérdezés
+   // képernyő koordináta lekérdezés
    function screenCoord( Screen $s, $c ) {
 	  throw new EVygu("Cannot get screen coord: $c");
    }
 
-   /// eseménysor futtatása
-   function run() {
-      while (! $this->runOver()) {
-         $this->runStep( true );
-      }
-   }
-
-   /// egy esemény lekérése és feldolgozása
-   function runStep( $wait ) { Tools::notImpl( $this, __FUNCTION__ ); }
-
-   /// vége van-e a futtatásnak
+   // vége van-e a futtatásnak
    function runOver() {
       return $this->over;
    }
 
-   /// futtatás befejezése
+   // futtatás befejezése
    function finish() {
 	   $this->over = true;
    }
 
-   /// view készítés
+   // view készítés
    function viewCreate( View $v ) {
       throw new EVygu("Cannot create view: ".$v->kind() );
    }
 
-   /// stílus készítés
+   // stílus készítés
    function styleCreate( Style $s ) {
       throw new EVygu("Cannot create style: ".$v->kind() );
    }
 
-   /// view felszámolás
+   // view felszámolás
    function viewDestroy( View $v ) {
    }
 
-   /// stílus felszámolás
+   // stílus felszámolás
    function styleDestroy( Style $s ) {
    }
 
-   /// view property
+   // view property
    function viewProperty( View $v, $p, $x ) {
       throw new EVygu("Cannot access property: ".$v->kind($v).".$p");
    }
 
-   /// view koordináta
+   // view koordináta
    function viewCoord( View $v, $c, $x, & $tmp ) {
       throw new EVygu("Cannot access coord: ".$v->kind().".".Tools::str($c));
-   }      
+   }
 
-   /// view koordináták
+   // view koordináták
    function viewCoords( View $v, array $cs, $x ) {
       $tmp = [];
       $ret = [];
@@ -163,30 +157,30 @@ class Vygu {
       }
       $this->viewCoordLast($v,$tmp);
       return $ret;
-   }      
+   }
 
-   /// insert művelet
+   // insert művelet
    function viewInsert( View $v, $at, $x ) {
       throw new EVygu("Cannot insert ".Tools::type($x)." to ".$v->kind() );
    }
 
-   /// view handler beállítás
+   // view handler beállítás
    function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
       throw new EVygu("Cannot set handler: ".get_class($v).".$e");
    }
 
-   /// ellenőrzés, hogy nem üres-e
+   // ellenőrzés, hogy nem üres-e
    protected function check( $x, $err ) {
       if ( ! $x || Tools::cIsNull($x))
          throw new EVygu($err);
       return $x;
    }
 
-   /// utolsó viewcoord
+   // utolsó viewcoord
    protected function viewCoordLast(View $v, $tmp) {
    }
 
-   //// vissza hash
+   // vissza hash
    protected function map($name) {
       if ( ! $ret = Tools::g( $this->maps, $name )) {
 		 $ret = $this->createMap( $name );
@@ -195,7 +189,7 @@ class Vygu {
       return $ret;
    }
 
-   /// vissza hash készítés
+   // vissza hash készítés
    protected function createMap( $name ) {
 	  throw new EVygu("Unknown map: $name");
    }

@@ -2,10 +2,18 @@
 
 namespace vygu;
 
+/// Window level action
+/// and action constants
 class Action {
 
+   /// Actions
    const
-      FIRE = "fire",
+      /// default action (like button press)
+      FIRE = "fire";
+
+   /// Properties
+   const
+      /// name of the action
       NAME = "name";
 
 }

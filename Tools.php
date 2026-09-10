@@ -2,29 +2,32 @@
 
 namespace vygu;
 
-/// hasznos cuccok
+/// Useful static functions
 class Tools {
 
    const
+      /// Value used, when a property is not changed, just read.
       GET = "%0\x00\x01\x04",
+      /// UTF16LE encoding
       U16L = "UTF-16LE",
+      /// UTF-8 encoding
       UTF = "UTF-8";
 
-   /// array_get
+   /// Warning-less `$arr[ $fld ] ` or `null`
    static function g($arr,$fld) {
       if ( is_array($arr) && array_key_exists($fld,$arr))
          return $arr[$fld];
       return null;
    }
 
-   /// arrayget vagy kivétel
+   /// Returns `$arr[ $fld ] ` or throws [EVygu] if not exists
    static function gg($arr,$fld) {
       if ( is_array($arr) && array_key_exists($fld,$arr))
          return $arr[$fld];
       throw new EVygu("Unknown field: $fld");
    }
 
-   /// első lehetséges array_get
+   /// Returns the first existing `$arr[ $f ]` from `$flds` or null
    static function ga($arr,array $flds) {
       if ( ! is_array($arr)) return null;
       foreach ($flds as $f) {
@@ -34,56 +37,65 @@ class Tools {
       return null;
    }
 
-   /// array_get + default
+   /// Returns `$arr[ $fld ]`, or if not exists, `$def`
    static function gd($arr,$fld,$def) {
       if ( is_array($arr) && array_key_exists($fld,$arr))
          return $arr[$fld];
       return $def;
    }
-   
-   /// tömbből elem kivétele
+
+   /// Removes first occurence `$x` from `$arr` (strict)
    static function arrayRemove( array & $arr, $x ) {
       if ( false !== $i = array_search( $x, $arr, true ))
          array_splice( $arr, $i, 1 );
    }
 
-   /// egész szám bitjei
+   /// Some bits of an integer
+   /// \param $x The integer
+   /// \param $at First returned bit index
+   /// \param $n Number of returned bits
+   /// \return The queried bits as integer
    static function bits($x,$at,$n) {
       return $x >> $at & ((1<<$n)-1);
    }
 
-   /// egséz szám bizonyos bitekkel beállítva
+   /// An integer with some bits changed
+   /// \param $x The input integer
+   /// \param $at First changed bit index
+   /// \param $n Number of changed bits
+   /// \param $v Changed bit values
+   /// \return A new integer with bits changed
    static function withBits($x,$at,$n,$v) {
       $mask = ((1<<$n)-1) << $at;
       return ($x & ~ $mask) | (($v << $at) & $mask);
    }
 
-   /// egész osztás
+   /// Integer division
    static function div($a,$b) {
       return intdiv($a,$b);
    }
 
-   /// egész osztás felkerekítéssel
+   /// Integer division rounding up
    static function divu($a,$b) {
       return intdiv($a+$b-1,$b);
    }
 
-   /// utf-8 karakter
+   /// An utf-8 character from Unicode value
    static function utf($uni) {
       return mb_chr($uni,self::UTF);
    }
 
-   /// nem implementált függvény
+   /// Throws an [EVygu] saying `$obj` not implements `$meth`
    static function notImpl( $obj, $meth ) {
       throw new EVygu( "Not implemented: ".get_class($obj).".$meth" );
    }
 
-   /// rendszer bitek száma
+   /// Number of bits in system processor (32,64)
    static function sysBits() {
       return 8*PHP_INT_SIZE;
    }
 
-   /// fájl betöltése
+   /// Loads a file or throws [EVygu]
    static function loadFile($fname) {
       $ret = file_get_contents($fname);
       if ( false === $ret )
@@ -91,13 +103,13 @@ class Tools {
       return $ret;
    }
 
-   /// debug üzenet
+   /// Shows debug values for all arguments on `STDERR`
    static function debug() {
       fwrite( STDERR, self::str(func_get_args())."\n" );
       fflush( STDERR );
    }
 
-   /// akármi szöveggé
+   /// Converts any value to string
    static function str($x) {
       switch ($t = self::type($x)) {
          case "array":
@@ -120,14 +132,14 @@ class Tools {
       }
    }
 
-   /// c null-e
+   /// Is `$x` an FFI NULL value
    static function cIsNull($x) {
       return $x instanceof FFI\CData
          && FFI\CType::TYPE_POINTER == \FFI::typeof($x)
          && \FFI::isNull($x);
    }
 
-   /// cdata
+   /// Converts FFI value to string
    static function cstr( \FFI\CData $x ) {
       if (self::cIsNull($x))
          return "NULL";
@@ -138,14 +150,14 @@ class Tools {
       }
    }
 
-   /// asszoc tömb
+   /// Is `$x` an associative array
    static function isAssoc($x) {
       if ( ! is_array($x)) return false;
       end($x);
       return key($x) !== count($x)-1;
    }
 
-   /// elem típusa
+   /// Type (or class name) of `$x`
    static function type($x) {
       if (is_object($x))
          return get_class($x);

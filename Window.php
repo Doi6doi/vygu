@@ -2,22 +2,27 @@
 
 namespace vygu;
 
-/// vygu ablak
+/// vygu Top level window [Group]
 class Window extends Group {
 
    const
+      /// Kind constant
       WINDOW = "window";
 
+   /// Properties
    const
-      /// ablak fejléc
+      /// Title of teh window (string)
       TITLE = "title",
-      /// felső menü
+      /// Top menu ([Menu])
       MENU = "menu",
-      /// főablak, rögötn látszik, és bezáráskor kilép
+      /// It is a main window (bool), shows up automatically
+      /// and exits application if closed
       MAIN = "main";
 
+   /// Handlers
    const
-      /// bezárás engedélyezés
+      /// Called when window is about to close
+      /// Return true if closing is allowed
       CLOSING = "closing";
 
    function __construct($args) {
@@ -26,8 +31,8 @@ class Window extends Group {
       if ( ! $this->handler( Group::LAYOUT ) )
          $this->handler( self::LAYOUT, [Layout::class,"def"] );
       if ( Tools::g( $args, self::MAIN )) {
-         $this->handler(self::CLOSING, function() { 
-             Vygu::ins()->finish(); 
+         $this->handler(self::CLOSING, function() {
+             Vygu::ins()->finish();
              return true;
          } );
          $this->visible(true);
@@ -38,10 +43,10 @@ class Window extends Group {
 
    function kind() { return self::WINDOW; }
 
-   /// menü
+   /// `MENU` property
    function menu($x=Tools::GET) { return $this->prop(self::MENU,$x); }
 
-   /// ablakcím
+   /// `TITLE` property
    function title($x=Tools::GET) { return $this->prop(self::TITLE,$x); }
 
    function defSize( $args ) {

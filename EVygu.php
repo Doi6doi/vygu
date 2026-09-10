@@ -2,6 +2,6 @@
 
 namespace vygu;
 
-/// kivétel
+/// Exception class thrown by \vygu classes
 class EVygu extends \Exception {
 }

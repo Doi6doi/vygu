@@ -2,30 +2,38 @@
 
 namespace vygu;
 
-/// megjeleníthető widget
+/// A widget, that can appear in the GUI
 class View {
 
-   /// propertyk
+   /// Properties
    const
+      /// Alignment ([Layout]:: `LEFT`, `RIGHT` or `CENTERX`)
       ALIGN = "align",
+      /// Cursor ([Cursor]:: `DEFAULT`, `WAIT`)
       CURSOR = "cursor",
+      /// [Style] describing colors and font properties
       STYLE = "style",
+      /// Text of a View (string)
       TEXT = "text",
+      /// Is View visible (bool)
       VISIBLE = "visible";
 
-   /// események
+   /// Handlers
    const
+      /// Key press/release handler (`h(Key $k)`)
       KEY = "key";
 
-   /// a konkrét implementáció
+   // a konkrét implementáció
    public $impl;
-   /// szülő view
+   /// Parent [Group]
    public $parent;
-   /// plusz adat
+   // extra információ
    public $data;
-   /// az eseménykezelők
+   // az eseménykezelők
    protected $handlers;
 
+   /// Creates a new View.
+   /// \param $args Property values
    function __construct($args=null) {
       $this->handlers = [];
       Vygu::ins()->viewCreate( $this );
@@ -38,14 +46,18 @@ class View {
       Vygu::ins()->viewDestroy($this);
    }
 
+   /// Returns the kind constant (different for each View)
    function kind() { Tools::notImpl($this,__FUNCTION__); }
 
-   /// újrarajzolás szükséges
+   /// Signals the engine to redraw the View
    function invalidate() {
       Vygu::ins()->viewInvalidate($this);
    }
 
-   /// eseménykezelő
+   /// Sets an event handler
+   /// \param $e Event kind (`KEY`, etc...)
+   /// \param $x Callback (callable)
+   /// \return `$this`
    function handler($e,$x=null) {
       $o = Tools::g($this->handlers,$e);
       if (null === $x) {
@@ -59,15 +71,18 @@ class View {
       }
    }
 
-   /// egy esemény lekezelése
+   /// Simulate an event
+   /// \param $e Event kind (`KEY`, etc...)
+   /// \param $args Event arguments
+   /// \return Return value of handler or null
    function handle($e,array $args=[]) {
       if ( ! $h = $this->handler($e))
          return null;
       Vygu::ins()->handlerCall( $h, $args );
    }
 
-   /// szülő view
-   function parent( $x = Tools::GET ) { 
+   /// Get or set parent [Group]
+   function parent( $x = Tools::GET ) {
       $old = $this->parent;
       if (Tools::GET === $x) return $old;
       Vygu::ins()->viewParent( $this, $x );
@@ -78,34 +93,43 @@ class View {
          $x->items[] = $this;
    }
 
-   /// láthatóság
+   /// `View::VISIBLE` property
    function visible( $x = Tools::GET ) { return $this->prop(self::VISIBLE,$x); }
 
-   /// kurzor
+   /// `View::Cursor` property
    function cursor( $x = Tools::GET ) { return $this->prop(self::CURSOR,$x); }
 
-   /// fókusz kérése
-   function focus() { 
-      return Vygu::ins()->viewFocus($this); 
+   /// Focuses the View
+   function focus() {
+      return Vygu::ins()->viewFocus($this);
    }
 
-   /// egy koordináta
+   /// Gets or sets a coordinate
+   /// \param $c The [Layout] coordinate
+   /// \param $x The new value, or `Tools::GET` for query
+   /// \return The current value if queried
    function coord( $c, $x=Tools::GET ) {
       $tmp = true;
       return Vygu::ins()->viewCoord($this,$c,$x,$tmp);
    }
-   
-   /// több koordináta
+
+   /// Gets or sets more coordinates
+   /// \param $cs The [Layout] coordinates
+   /// \param $xs The values, or `Tools::GET` for query
+   /// \return An array containing the values
    function coords( array $cs, $xs=Tools::GET) {
       return Vygu::ins()->viewCoords($this,$cs,$xs);
    }
 
-   /// egy jellemző
+   /// Gets or sets a property
+   /// \param $p The property name
+   /// \param $x The new value, or `Tools::GET` for query
+   /// \return The current value if queried
    function prop($p,$x = Tools::GET ) {
       return Vygu::ins()->viewProperty($this,$p,$x);
    }
 
-   /// van-e ilyen jellemző
+   /// Does `$p` property exists for this View
    function isProp($p) {
       switch ($p) {
          case self::CURSOR:
@@ -115,8 +139,8 @@ class View {
             return false;
       }
    }
-   
-   /// koordináta-e
+
+   /// Does `$c` coordinate exist for this View
    function isCoord($c) {
       switch ($c) {
          case Layout::BOTTOM:
@@ -132,16 +156,17 @@ class View {
             return false;
       }
    }
-   
-   /// handler-e
+
+   /// Does `$h` handler exist for this View
    function isHandler($h) {
       return false;
    }
 
-   /// a default argumentum
+   /// The default argument set
+   /// if `$args` in `__create()` is not an array
    function defArg() { return null; }
 
-   /// default argumentum init
+   // default argumentum init
    function initDefArg( & $args ) {
       if ( ! is_array( $args )) {
          if ( null !== $args
@@ -151,7 +176,7 @@ class View {
       }
    }
 
-   /// minden argumentum init
+   // minden argumentum init
    function initArgs( array $args ) {
       if ( ! $args ) return;
       foreach ($args as $k=>$v) {

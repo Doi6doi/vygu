@@ -4,17 +4,18 @@ namespace vygu;
 
 /// Windows API engine
 class WinApi extends Vygu {
-	
+
    const
+      /// Kind constant
       WINAPI = "winapi";
-      
+
    const
       CBUTTON = "BUTTON",
       CVYGU = "Vygu",
       CSTATIC = "STATIC",
       ERRLEN = 1024;
 
-   /// temp adatok
+   // temp adatok
    const
       TCONT = "tCont",
       TDEF  = "tDef",
@@ -23,11 +24,11 @@ class WinApi extends Vygu {
 
    const
       BN_CLICKED = 0,
-   
+
       COLOR_WINDOW = 5,
-      
+
       DT_CALCRECT = 0x400,
-     
+
       GWL_STYLE = -16,
 
       VK_SHIFT   = 0x10,
@@ -63,9 +64,9 @@ class WinApi extends Vygu {
       VK_RSHIFT  = 0xa1,
       VK_LCONTROL = 0xa2,
       VK_RCONTROL = 0xa3,
-      VK_LMENU   = 0xa4,  
-      VK_RMENU   = 0xa5,  
-   
+      VK_LMENU   = 0xa4,
+      VK_RMENU   = 0xa5,
+
       WM_DESTROY = 2,
       WM_SIZE = 5,
       WM_CLOSE = 0x10,
@@ -74,20 +75,20 @@ class WinApi extends Vygu {
       WM_KEYUP = 0x101,
       WM_COMMAND =0x111,
 
-      WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY, 
+      WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY,
          self::WM_KEYDOWN, self::WM_KEYUP, self::WM_SIZE ],
-      
+
       WS_VISIBLE = 0x10000000,
       WS_CHILD = 0x40000000,
       WS_POPUP = 0x80000000,
       WS_OVERLAPPEDWINDOW = 0xcf0000,
 
       SPI_GETWORKAREA = 0x30,
-      
+
       SW_HIDE = 0,
       SW_SHOW = 5;
 
-   /// mapek
+   // mapek
    const
       MALIGN = [
          0 => Layout::LEFT,
@@ -98,7 +99,7 @@ class WinApi extends Vygu {
          0x7f00=>Cursor::DEFAULT,
          0x7f02=>Cursor::WAIT
       ],
-      MSPECS = [ 
+      MSPECS = [
          self::VK_CAPITAL => Key::CAPS,
          self::VK_ESCAPE => Key::ESC,
          self::VK_PRIOR => Key::PGUP,
@@ -131,42 +132,42 @@ class WinApi extends Vygu {
          self::VK_LMENU => Key::ALT,
          self::VK_RMENU => Key::ALTGR
       ];
-      
-   /// user32.dll
+
+   // user32.dll
    protected $ffu;
-   /// kernel32.dll
+   // kernel32.dll
    protected $ffk;
-   /// gdi32.dll
+   // gdi32.dll
    protected $ffg;
-   /// comctl32.dll
+   // comctl32.dll
    protected $ffc;
-   /// hwnd -> View
+   // hwnd -> View
    protected $wnds;
-   /// saját wndproc
+   // saját wndproc
    protected $wndPrc;
-   /// subclass proc
+   // subclass proc
    protected $subPrc;
-   /// felső üzenet objektum
+   // felső üzenet objektum
    protected $wndMsg;
-   /// az aktuális hInstance
+   // az aktuális hInstance
    protected $hins;
-   /// wide stringek tárolva
+   // wide stringek tárolva
    protected $swps;
-   /// szükséges wm-ek
+   // szükséges wm-ek
    protected $nwms;
-   /// kivétel callback-ben
+   // kivétel callback-ben
    protected $err;
-   /// hasznos rect
+   // hasznos rect
    protected $rect;
-   /// kurzorok betöltve
+   // kurzorok betöltve
    protected $crsrs;
-   /// DC számolásokhoz
+   // DC számolásokhoz
    protected $dc;
-   /// billentyű állapotok
+   // billentyű állapotok
    protected $keyState;
-   /// bájtok
+   // bájtok
    protected $wchars;
-      
+
    function __construct($args) {
 	   parent::__construct($args);
       $this->wnds = [];
@@ -208,8 +209,8 @@ class WinApi extends Vygu {
          "Could not register window class");
       $this->dc = $this->checkW( $g->CreateCompatibleDC(null),
          "Could not create DC" );
-   }      
- 
+   }
+
    function viewCreate( View $v ) {
       $u = $this->ffu;
       $k = $this->ffk;
@@ -218,17 +219,17 @@ class WinApi extends Vygu {
          case Button::BUTTON:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CBUTTON ),
             null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
-            null, null, $this->hins, null ); 
+            null, null, $this->hins, null );
          break;
          case Group::GROUP:
          case Label::LABEL:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CSTATIC ),
             null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
-            null, null, $this->hins, null ); 
+            null, null, $this->hins, null );
          break;
          case Window::WINDOW:
-            $ret = $u->CreateWindowExW( 0, $this->swp( self::CVYGU ), 
-               null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100, 
+            $ret = $u->CreateWindowExW( 0, $this->swp( self::CVYGU ),
+               null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100,
                null, null, $this->hins, null );
          break;
          default: return parent::viewCreate( $v );
@@ -242,8 +243,8 @@ class WinApi extends Vygu {
             "Could not set window subclass");
       }
    }
- 
-   /// string WCHAR *-gá alakítás
+
+   // string WCHAR *-gá alakítás
    function sw( $s ) {
       $u = mb_convert_encoding( $s, Tools::U16L, Tools::UTF );
       $l = strlen($u);
@@ -252,21 +253,21 @@ class WinApi extends Vygu {
       return $buf;
    }
 
-   /// wide stringként tárolás, és pointer az első betűre
+   // wide stringként tárolás, és pointer az első betűre
    function swp( $s ) {
       if (! $ret = Tools::g( $this->swps, $s ))
          $ret = $this->swps[$s] = $this->sw($s);
       return \FFI::addr( $ret[0] );
    }
 
-   /// WCHAR * stringgé alakítás
+   // WCHAR * stringgé alakítás
    function ws( $w, $l ) {
       $u = $this->ffu;
       $ret = \FFI::string( $u->cast("char *",\FFI::addr($w)), 2*$l );
       return mb_convert_encoding( $ret, Tools::UTF, Tools::U16L );
    }
 
-   /// wndProc futtatás
+   // wndProc futtatás
    function wndProc( $hwnd, $msg, $wparam, $lparam ) {
       if ( array_key_exists( $msg, $this->nwms )) {
          try {
@@ -279,7 +280,7 @@ class WinApi extends Vygu {
       return $this->ffu->DefWindowProcW($hwnd,$msg,$wparam,$lparam);
    }
 
-   /// subProc futtatás
+   // subProc futtatás
    function subProc( $hwnd, $msg, $wparam, $lparam ) {
       if ( array_key_exists( $msg, $this->nwms )) {
          try {
@@ -292,7 +293,7 @@ class WinApi extends Vygu {
       return $this->ffc->DefSubclassProc($hwnd,$msg,$wparam,$lparam);
    }
 
-   ///  egy view message kezelése
+   //  egy view message kezelése
    function handleMsg($hwnd, $msg, $wparam, $lparam) {
       if ( ! $v = $this->viewByHwnd( $hwnd ) )
          return;
@@ -319,17 +320,17 @@ class WinApi extends Vygu {
             if ($v->handle( View::KEY, [$k] ))
                return true;
          break;
-      }   
+      }
    }
 
-   /// check windows hibával
+   // check windows hibával
    function checkW( $x, $err ) {
       if ( ! (bool)$x )
          throw new EVygu("$err: ".$this->lastError());
       return $x;
    }
-   
-   /// utolsó hibaüzenet
+
+   // utolsó hibaüzenet
    function lastError() {
       $k = $this->ffk;
       $ret = $k->GetLastError();
@@ -345,14 +346,14 @@ class WinApi extends Vygu {
    function viewProperty( View $v, $p, $x ) {
       switch ($p) {
          case View::VISIBLE: return $this->viewVisible($v,$x);
-         case View::TEXT: case Window::TITLE: 
+         case View::TEXT: case Window::TITLE:
             return $this->viewText($v,$x);
          case View::ALIGN: return $this->viewAlign($v,$x);
       }
       return parent::viewProperty($v,$p,$x);
    }
 
-   /// ablak címsor olvasása vagy írása
+   // view text olvasása vagy írása
    function viewText($v,$x) {
       $u = $this->ffu;
       if (Tools::GET == $x) {
@@ -367,7 +368,7 @@ class WinApi extends Vygu {
       }
    }
 
-   /// view elrejtése, vagy megjelenítése
+   // view elrejtése, vagy megjelenítése
    function viewVisible($v,$x) {
       $u = $this->ffu;
       if (Tools::GET === $x)
@@ -379,19 +380,19 @@ class WinApi extends Vygu {
       }
    }
 
-   /// view igazítás
+   // view igazítás
    function viewAlign($v,$x) {
       $s = $this->viewStyleWord($v);
       if (Tools::GET === $x) {
          return Tools::g( self::MALIGN, Tools::bits($s,0,2));
       } else {
-         $s = Tools::withBits( $s, 0, 2, 
+         $s = Tools::withBits( $s, 0, 2,
             Tools::g($this->map(View::ALIGN),$x));
          $this->viewStyleWord($v,$s);
       }
    }
 
-   /// stílus szó írás vagy olvasás
+   // stílus szó írás vagy olvasás
    function viewStyleWord($v,$x=Tools::GET) {
       $u = $this->ffu;
       if (Tools::GET === $x)
@@ -507,7 +508,7 @@ class WinApi extends Vygu {
          }
       } else {
          switch ($c) {
-            case Layout::BOTTOM: 
+            case Layout::BOTTOM:
                $r->top += $x - $r->bottom;
                $r->bottom = $x;
             break;
@@ -522,15 +523,15 @@ class WinApi extends Vygu {
                $r->bottom = $r->top + $h;
             break;
             case Layout::HEIGHT: $r->bottom = $r->top + $x; break;
-            case Layout::LEFT: 
+            case Layout::LEFT:
                $r->right += $x - $r->left;
                $r->left = $x;
             break;
-            case Layout::RIGHT: 
+            case Layout::RIGHT:
                $r->left += $x-$r->right;
                $r->right = $x;
             break;
-            case Layout::TOP: 
+            case Layout::TOP:
                $r->bottom += $x - $r->top;
                $r->top = $x;
             break;
@@ -540,9 +541,9 @@ class WinApi extends Vygu {
          if ( Tools::g($tmp,self::TLAST) )
             $this->viewCoordLast( $v, $tmp );
       }
-   }      
+   }
 
-   /// speciális koordináták
+   // speciális koordináták
    function viewCoordSpec( $v, $c, $x, &$tmp ) {
       switch ($c) {
          case Layout::CONTWIDTH:
@@ -569,11 +570,11 @@ class WinApi extends Vygu {
       $this->ffu->SetFocus( $v->impl );
    }
 
-   /// Key eseményből
+   // Key eseményből
    function key( $wparam, $lparam ) {
       $ret = new Key();
       $this->getKeyState();
-      $ret->event = Tools::bits($lparam,31,1) 
+      $ret->event = Tools::bits($lparam,31,1)
          ? Key::RELEASE : Key::PRESS;
       $ret->modif = $this->keyModif();
       $ret->scan = Tools::bits($lparam,16,8);
@@ -595,7 +596,7 @@ class WinApi extends Vygu {
       return $ret;
    }
 
-   /// unicode kó
+   // unicode kód
    protected function keyUnicode($wparam,$scan) {
       $n = $this->ffu->ToUnicode( $wparam,
          $scan, \FFI::addr($this->keyState[0]),
@@ -605,13 +606,13 @@ class WinApi extends Vygu {
       return 0;
    }
 
-   /// keyboard state lekérése
+   // keyboard state lekérése
    protected function getKeyState() {
-      $this->checkW( $this->ffu->GetKeyboardState( 
+      $this->checkW( $this->ffu->GetKeyboardState(
          \FFI::addr($this->keyState[0])), "Could not get keyboard state");
    }
 
-   /// temp adat $v-ez
+   // temp adat $v-ez
    protected function temp(View $v, $kind, & $tmp ) {
       $u = $this->ffu;
       if (true === $tmp)
@@ -619,12 +620,12 @@ class WinApi extends Vygu {
       if ( ! $ret = Tools::g( $tmp, $kind )) {
          switch ($kind) {
             case self::TRECT:
-               $this->checkW( $u->GetWindowRect( $v->impl, 
+               $this->checkW( $u->GetWindowRect( $v->impl,
                   \FFI::addr($this->rect)),"Could not get window rect");
                $ret = $this->rect;
             break;
             case self::TCONT:
-               $this->checkW( $u->GetClientRect( $v->impl, 
+               $this->checkW( $u->GetClientRect( $v->impl,
                   \FFI::addr($this->rect)),"Could not get client rect");
                $ret = $this->rect;
             break;
@@ -637,7 +638,7 @@ class WinApi extends Vygu {
       }
       return $ret;
    }
-   
+
    /// view default mérete
    protected function viewDefSize( View $v ) {
       $u = $this->ffu;
@@ -652,7 +653,6 @@ class WinApi extends Vygu {
          default: throw new EVygu("Cannot get default size: $k");
       }
    }
-   
 
    /// nwms hash létrehozása
    protected function initNwms() {
@@ -671,14 +671,14 @@ class WinApi extends Vygu {
 
    protected function viewCoordLast(View $v, $tmp) {
       if ($r = Tools::g($tmp,self::TRECT)) {
-         $this->checkW( $this->ffu->MoveWindow( $v->impl, 
+         $this->checkW( $this->ffu->MoveWindow( $v->impl,
             $r->left, $r->top, $r->right-$r->left, $r->bottom-$r->top,
             false ), "Could not move window");
          $this->viewInvalidate($v);
       }
    }
 
-   /// kurzor konverzió vissza
+   // kurzor konverzió vissza
    protected function fromCursor( $c ) {
       if ( ! $ret = Tools::g( $this->crsrs, $c )) {
          $u = $this->ffu;
@@ -699,6 +699,5 @@ class WinApi extends Vygu {
          default: return parent::createMap($name);
       }
    }
-
 
 }

@@ -2,18 +2,16 @@
 
 namespace vygu;
 
-/// formázható beviteli memo
+/// Multi line [Memo] with formattable parts
 class Rich extends Memo {
 
    const
+      /// Kind constant
       RICH = "rich";
-
-   const
-      TEXTVIEW = "textview";
 
    function kind() { return self::RICH; }
 
-   /// aktuális stílus
+   /// [View]::STYLE property
    function style($x=Tools::GET) { return $this->prop(self::STYLE,$x); }
 
 }

@@ -2,24 +2,27 @@
 
 namespace vygu;
 
-/// szövegstílus Rich-hez
+/// Text style
 class Style {
 
+   /// Properties
    const
-      /// háttésszín
+      /// Background color
       BACK = "back",
-      /// vastag betű
+      /// Bold text
       BOLD = "bold",
-      /// előtéár szín
+      /// Foreground color
       FORE = "fore",
-      /// dőlt betűs
+      /// Italic text
       ITALIC = "italic",
-      /// áthúzott
+      /// Strike-through text
       THROUGH = "through";
 
    protected $props;
    public $impl;
 
+   /// Create a new Style
+   /// \param $args Property values
    function __construct($args=[]) {
       foreach ($args as $k=>$v)
          $this->prop($k,$v);
