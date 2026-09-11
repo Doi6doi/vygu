@@ -3,21 +3,20 @@
 namespace vygu;
 
 /// A menu bar, popup menu, or submenu
-class Menu {
+class Menu extends Elem {
 
-   public $props;
-   public $impl;
+   const
+      MENU = "menu";
+
    /// Menu items
    public $items;
 
-   /// Create new menu
-   /// \param $args property values (default: [Action]::NAME)
-   function __construct( $args=[] ) {
-      Vygu::ins()->menuCreate( $this );
-      if ( null !== $args && ! is_array($args))
-         $args = [Action::NAME=>$args];
-      $this->props = $args;
-   }
+   function kind() { return self::MENU; }
+
+   function defArg() { return self::NAME; }
+
+   /// `NAME` property
+   function name( $x = Tools::GET ) { return $this->prop( self::NAME, $x ); }
 
    /// Add a menu item
    /// \param $i [Menu] or [Action] to add

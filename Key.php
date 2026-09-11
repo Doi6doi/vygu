@@ -89,7 +89,29 @@ class Key {
       ///
       INS = 806,
       ///
-      DEL = 807;
+      DEL = 807,
+      ///
+      KPENTER = 808;
+
+   /// Parse key from string
+   static function parse( $x ) {
+      $arr = [ "ctrl+"=>self::MCTRL, "alt+"=>self::MALT, "shift+"=>self::MSHIFT ];
+      foreach ($arr as $k=>$v) {
+         $kl = strlen($k);
+         if ($k == substr($x,0,$kl)) {
+            $ret = self::parse( substr($x,$kl));
+            $ret->modif |= $v;
+            return $ret;
+         }
+      }
+      $ret = new Key();
+      if ( 1 == Tools::ulen($x) ) {
+         $ret->unicode = $x;
+      } else {
+         throw new EVygu("Cannot parse key: $x");
+      }
+      return $ret;
+   }
 
    /// The key event (pressed, released)
    public $event;

@@ -211,7 +211,7 @@ class WinApi extends Vygu {
          "Could not create DC" );
    }
 
-   function viewCreate( View $v ) {
+   function elemCreate( Elem $v ) {
       $u = $this->ffu;
       $k = $this->ffk;
       $ret = null;
@@ -232,7 +232,7 @@ class WinApi extends Vygu {
                null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100,
                null, null, $this->hins, null );
          break;
-         default: return parent::viewCreate( $v );
+         default: return parent::elemCreate( $v );
       }
       $this->checkW( $ret, "Could not create winapi $h" );
       $v->impl = $ret;
@@ -310,7 +310,7 @@ class WinApi extends Vygu {
                return;
             switch ( $e = ($wparam >> 16) & 0xffff ) {
                case self::BN_CLICKED:
-                  $s->handle( Action::FIRE );
+                  $s->handle( Elem::FIRE );
                   return  true;
             }
          break;
@@ -343,14 +343,15 @@ class WinApi extends Vygu {
          else return "$ret";
    }
 
-   function viewProperty( View $v, $p, $x ) {
+   function elemProperty( Elem $v, $p, $x ) {
       switch ($p) {
          case View::VISIBLE: return $this->viewVisible($v,$x);
          case View::TEXT: case Window::TITLE:
             return $this->viewText($v,$x);
          case View::ALIGN: return $this->viewAlign($v,$x);
+         default:
+            return parent::elemProperty($v,$p,$x);
       }
-      return parent::viewProperty($v,$p,$x);
    }
 
    // view text olvasása vagy írása
@@ -365,6 +366,7 @@ class WinApi extends Vygu {
       } else {
          $this->checkW( $u->SetWindowTextW( $v->impl, $this->sw( "$x" )),
             "Could not set text" );
+         return $v;
       }
    }
 
@@ -378,6 +380,7 @@ class WinApi extends Vygu {
       } else {
          $u->ShowWindow( $v->impl, self::SW_HIDE );
       }
+      return $v;
    }
 
    // view igazítás
@@ -389,6 +392,7 @@ class WinApi extends Vygu {
          $s = Tools::withBits( $s, 0, 2,
             Tools::g($this->map(View::ALIGN),$x));
          $this->viewStyleWord($v,$s);
+         return $v;
       }
    }
 
@@ -401,7 +405,7 @@ class WinApi extends Vygu {
       $v->invalidate();
    }
 
-   function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
+   function elemHandler(Elem $v, $e, ?Handler $o, ?Handler $h) {
    }
 
    function viewInvalidate(View $v) {

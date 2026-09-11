@@ -41,7 +41,7 @@ class Calc {
       $this->lab = $w->add( new Label([View::TEXT=>"0",View::ALIGN=>Layout::CENTERX]) );
       foreach (self::BUTS as $b) {
          $g->add(new Button($b))
-            ->handler( Action::FIRE, function() use ($b) {
+            ->handler( Elem::FIRE, function() use ($b) {
                $this->butFire($b);
             })->handler( View::KEY, [$this,"key"] );
       }
@@ -53,7 +53,8 @@ class Calc {
    function key($k) {
       if ( Key::PRESS != $k->event ) return;
       $u = Tools::utf( $k->unicode );
-      if ( "\r" == $u ) $u = "=";
+      if ( "\r" == $u || Key::KPENTER == $k->special)
+         $u = "=";
       if (in_array($u,self::BUTS)) {
          $this->butFire( $u );
             return true;

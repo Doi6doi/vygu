@@ -10,6 +10,8 @@ class Gtk4 extends Vygu {
       GTK4 = "gtk4";
 
    const
+      GVYGU = "gvygu",
+      GSHORTCUT = "gShortcut",
       KEYCTRL = "keyCtrl",
       LAYOUTMGR = "layoutMgr",
       HANDLERIDS = "handlerIDs",
@@ -49,8 +51,8 @@ class Gtk4 extends Vygu {
          0xff56 => Key::PGDN,
          0xff57 => Key::END,
          0xff63 => Key::INS,
-         0xffff => Key::DEL,
          0xff7f => Key::NUM,
+         0xff8d => Key::KPENTER,
          0xffbe => Key::F1,
          0xffbf => Key::F2,
          0xffc0 => Key::F3,
@@ -69,7 +71,8 @@ class Gtk4 extends Vygu {
          0xffe4 => Key::RCTRL,
          0xffe5 => Key::CAPS,
          0xffe9 => Key::ALT,
-         0xffeb => Key::META
+         0xffeb => Key::META,
+         0xffff => Key::DEL
       ];
 
    // ffi kapcsolat
@@ -84,6 +87,10 @@ class Gtk4 extends Vygu {
    protected $ints;
    // igen/nem konstansok
    protected $yesno;
+   /// action számozás
+   protected $nact;
+   /// action group
+   protected $actgrp;
 
    function __construct($args) {
       parent::__construct($args);
@@ -93,6 +100,7 @@ class Gtk4 extends Vygu {
       $f->gtk_init();
       $this->allo = $f->new("GtkAllocation");
       $this->rect = $f->new("GdkRectangle");
+      $this->actgrp = $f->g_simple_action_group_new();
       $this->ints = $f->new("int[4]");
       $this->yesno = $f->new("int[2]");
       $this->yesno[0] = 0;
@@ -105,11 +113,12 @@ class Gtk4 extends Vygu {
       return $ret;
    }
 
-   function handlerCreate(View $v, $e, callable $cb) {
+   function handlerCreate(Elem $v, $e, callable $cb) {
       $ret = parent::handlerCreate($v,$e,$cb);
+      $ret->data = [Elem::ELEM =>$v];
       switch ($e) {
          case View::KEY: $this->handlerCreateKey( $ret ); break;
-         case Action::FIRE:
+         case Elem::FIRE:
             $this->handlerCreateSignal( $ret, false );
          break;
          case Window::CLOSING:
@@ -121,7 +130,7 @@ class Gtk4 extends Vygu {
       return $ret;
    }
 
-   function viewCreate( View $v ) {
+   function elemCreate( Elem $v ) {
       $f = $this->ffi;
       switch ($k = $v->kind()) {
          case Button::BUTTON: $ret = $f->gtk_button_new(); break;
@@ -129,6 +138,15 @@ class Gtk4 extends Vygu {
          case Label::LABEL: $ret = $f->gtk_label_new(null); break;
          case Memo::MEMO: case Rich::RICH:
             $ret = $this->createMemo($v);
+         break;
+         case Menu::MENU: 
+            $ret = $f->g_menu_new();
+            $v->data = [];
+         break;
+         case Action::ACTION:
+            $id = Action::ACTION.(++$this->nact);
+            $ret = $f->g_simple_action_new( $id, null );
+            $v->data = [ Elem::ID => $id ];
          break;
          case Window::WINDOW:
             $ret = $f->gtk_window_new();
@@ -138,14 +156,21 @@ class Gtk4 extends Vygu {
             ];
             $f->gtk_window_set_child( $ret, $b );
          break;
-         default: return parent::viewCreate($v);
+         default: return parent::elemCreate($v);
       }
       $this->check( $ret, "Could not create gtk4 $k" );
       $v->impl = $this->sink( $ret );
    }
 
-   function menuCreate( Menu $m ) {
-      $m->impl = $this->ffi->g_menu_new();
+   function menuAdd( Menu $m, $x ) {
+      $f = $this->ffi;
+      if ($x instanceof Menu) {
+         $f->g_menu_append_submenu(
+            $m->impl, $x->name(), $x->impl );
+      } else if ($x instanceof Action) {
+            
+      } else
+         parent::menuAdd( $m, $x );
    }
 
    function styleCreate( Style $s ) {
@@ -171,7 +196,48 @@ class Gtk4 extends Vygu {
       } else {
          $c = $this->fromCursor( $x );
          $f->gtk_widget_set_cursor_from_name( $v->impl, $c );
+         return $v;
       }
+   }
+
+   // Elem name jellemzője
+   function elemName( Elem $v, $x ) {
+      $g = Tools::GET === $x;
+      switch ($k=$v->kind()) {
+         case Menu::MENU:
+            if ($g)
+               return Tools::g( $v->data, Elem::NAME );
+               else $v->data[Elem::NAME] = "$x";
+         break;
+         default: return parent::elemProperty( $v, Elem::NAME, $x );
+      }
+      return $v;
+   }
+
+   /// Action shortcut jellemzője
+   function actionShortcut( Action $a, $x ) {
+      $f = $this->ffi;
+      $old = Tools::g( $a->data, Action::SHORTCUT );
+      if (Tools::GET === $x)
+         return $old;
+      if ( null === $x ) {
+         if ( $old  ) 
+            $f->gtk_shortcut_controller_remove_shortcut( $this->sctc, 
+               $a->data[ self::GSHORTCUT ] );
+      } else {
+         if ( ! $x instanceof Key )
+            $x = Key::parse( $x );
+         $ss = $this->shortcutStr( $x );
+         $st = $f->gtk_shortcut_trigger_parse_string( $ss );
+         $this->check( $st, "Could not create shortcut trigger: $ss");
+         $sa = $f->gtk_shortcut_action_parse_string( 
+            sprintf("action(%s.%s)", self::GVYGU, $a->data[ Elem::ID ] ));
+         $this->check( $sa, "Could not create shortcut action");
+         $sc = $f->gtk_shortcut_new( $st, $sa );
+         $this->check( $sc, "Could not create shortcut" );
+         $a->data[ self::GSHORTCUT ] = $this->sink( $sc );
+      }
+      return $a;
    }
 
    // View align jellemzője
@@ -181,39 +247,42 @@ class Gtk4 extends Vygu {
       switch ($k = $v->kind()) {
          case Label::LABEL:
             if ($g) {
-               return $f->gtk_label_set_xalign( $v->impl,
-                  Tools::g($this->map( View::ALIGN ), $x ) );
-            } else {
                return Tools::g( self::MALIGN,
                   "".$f->gtk_label_get_xalign( $v->impl ));
+            } else {
+               $f->gtk_label_set_xalign( $v->impl,
+                  Tools::g($this->map( View::ALIGN ), $x ) );
             }
          break;
          default: throw new EVygu("Cannot access $k.align");
       }
+      return $v;
    }
 
    // richedit stílusa
    function richStyle( Rich $r, $s ) {
       if ( Tools::GET === $s )
          return $this->richStyleRead( $r );
+      throw new EVygu("Cannot set rich style");
+      return $r;
    }
 
-   function viewDestroy( View $v ) {
+   function elemDestroy( Elem $v ) {
       if ( $v instanceof Group )
          $v->clear();
       $this->ffi->g_object_unref( $v->impl );
    }
 
-   function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
+   function elemHandler(Elem $v, $e, ?Handler $o, ?Handler $h) {
       switch ($e) {
-         case Window::CLOSING: case Action::FIRE:
-            return $this->viewHandlerSignal( $v, $e, $o, $h );
+         case Window::CLOSING: case Elem::FIRE:
+            return $this->elemHandlerSignal( $v, $e, $o, $h );
          case View::KEY:
-            return $this->viewHandlerKey( $v, $e, $o, $h );
+            return $this->elemHandlerKey( $v, $e, $o, $h );
          case Group::LAYOUT:
-            return $this->viewHandlerLayout( $v, $e, $o, $h );
+            return $this->elemHandlerLayout( $v, $e, $o, $h );
          default:
-            return parent::viewHandler( $v, $e, $o, $h );
+            return parent::elemHandler( $v, $e, $o, $h );
       }
    }
 
@@ -233,8 +302,10 @@ class Gtk4 extends Vygu {
       }
    }
 
-   function viewProperty( View $v, $p, $x ) {
+   function elemProperty( Elem $v, $p, $x ) {
       switch ($p) {
+         case Action::SHORTCUT: return $this->actionShortcut( $v, $x );
+         case Elem::NAME: return $this->elemName($v,$x);
          case View::ALIGN: return $this->viewAlign($v,$x);
          case View::CURSOR: return $this->viewCursor($v,$x);
          case View::STYLE: return $this->viewStyle($v,$x);
@@ -246,14 +317,16 @@ class Gtk4 extends Vygu {
          switch ($p) {
             case View::VISIBLE: return $f->gtk_widget_get_visible($im);
             case Window::TITLE: return $f->gtk_window_get_title($im);
+            default: return parent::elemProperty($v,$p,$x);
          }
       } else {
          switch ($p) {
-            case View::VISIBLE: return $f->gtk_widget_set_visible($im,$x);
-            case Window::TITLE: return $f->gtk_window_set_title($im,$x);
+            case View::VISIBLE: $f->gtk_widget_set_visible($im,$x); break;
+            case Window::TITLE: $f->gtk_window_set_title($im,$x); break;
+            default: return parent::elemProperty($v,$p,$x);
          }
       }
-      return parent::viewProperty($v,$p,$x);
+      return $v;
    }
 
    // view koordináta
@@ -357,6 +430,28 @@ class Gtk4 extends Vygu {
       return parent::screenCoord($s,$c);
    }
 
+   /// gtk-s shortcut string
+   protected function shortcutStr( Key $k ) {
+      if ($u = $k->unicode)
+         $ret = Tools::ulower( $u );
+         else $ret = $this->shortcutSpec( $k->special );
+      $m = $k->modif;
+      if ( $m & Key::MSHIFT )
+         $ret = "<Shift>$ret";
+      if ( $m & Key::MALT )
+         $ret = "<Alt>$ret";
+      if ( $m & Key::MCTRL )
+         $ret = "<Control>$ret";
+      return $ret;
+   }
+
+   /// speciális key gtk-shortcut értéke
+   protected function shortcutSpec( $s ) {
+      switch ($s) {
+         default: throw new EVygu("Unknown shortcut spec: $s");
+      }
+   }
+
    // a valódi widget impl
    protected function realImpl( View $v ) {
       switch ($v->kind()) {
@@ -377,9 +472,15 @@ class Gtk4 extends Vygu {
    }
 
    // event-hez tartozó signal neve
-   protected function eventSignal($e,$d=null) {
+   protected function eventSignal(Elem $v,$e,$d=null) {
       switch ($e) {
-         case Action::FIRE: return "clicked";
+         case Elem::FIRE:
+            switch ($k = $v->kind()) {
+               case Button::BUTTON: return "clicked";
+               case Action::ACTION: return "activate";
+               default: throw new EVygu("Unknown fire signal for $k");
+            }
+         break;
          case View::KEY: return $d[0] ? "key-pressed":"key-released";
          case Window::CLOSING: return "close-request";
          default: throw new EVygu("Unknown event: $e");
@@ -403,12 +504,12 @@ class Gtk4 extends Vygu {
          case Label::LABEL:
             if ($g)
                return $f->gtk_label_get_text($im);
-               else return $f->gtk_label_set_text($im,"$x");
+               else $f->gtk_label_set_text($im,"$x");
          break;
          case Button::BUTTON:
             if ($g)
                return $f->gtk_button_get_label($im);
-               else return $f->gtk_button_set_label($im,"$x");
+               else $f->gtk_button_set_label($im,"$x");
          break;
          case Memo::MEMO:
          case Rich::RICH:
@@ -419,11 +520,13 @@ class Gtk4 extends Vygu {
                $f->gtk_text_buffer_get_bounds( $b, $i, $i2 );
                return \FFI::string( $f->gtk_text_buffer_get_text( $b, $i, $i2, false ) );
             } else {
-               return $f->gtk_text_buffer_set_text( $b, "$x", -1 );
+               $f->gtk_text_buffer_set_text( $b, "$x", -1 );
             }
          break;
+         default:
+            return parent::elemProperty($v,View::TEXT,$x);
       }
-      return parent::viewProperty($v,View::TEXT,$x);
+      return $v;
    }
 
    // richedit készítése és összerakása
@@ -505,44 +608,47 @@ class Gtk4 extends Vygu {
          $nat_base[0] = -1;
       };
       $c->allocate = function( $widget, $width, $height, $base ) use ($h) {
-         return $this->callCallback( $h->cb, [$h->view] );
+         return $this->callCallback( $h->cb, [$h->data[ Elem::ELEM ]] );
       };
       $h->data = $c;
    }
 
    // signal kezelő be-vagy kikapcsolása
-   protected function handlerSignal( $v, $e, $h, $on, $data = null ) {
+   protected function handlerSignal( Elem $v, $e, $h, $on, $data = null ) {
       if ( ! $h ) return;
       $f = $this->ffi;
+      switch ($e) {
+         case View::KEY: $im = $this->viewController( $v, self::KEYCTRL ); break;
+         default: $im = $v->impl;
+      }
       if ($on) {
-         $s = $this->eventSignal($e,$data);
+         $s = $this->eventSignal($v,$e,$data);
          $h->data[ self::HANDLERIDS ] [] =
-            $f->g_signal_connect_data( $v, $s,
+            $f->g_signal_connect_data( $im, $s,
                $f->cast("gpointer",$h->data[ self::HANDLERPTR ]),
                $data, null, 0 );
       } else {
          foreach ( $h->data[ self::HANDLERIDS ] as $i  )
-            $f->g_signal_handler_disconnect( $v, $i );
+            $f->g_signal_handler_disconnect( $im, $i );
       }
    }
 
    // signal kezelő beállítása
-   protected function viewHandlerSignal( $v, $e, $o, $h ) {
-      $this->handlerSignal( $v->impl, $e, $o, false );
-      $this->handlerSignal( $v->impl, $e, $h, true );
+   protected function elemHandlerSignal( $v, $e, $o, $h ) {
+      $this->handlerSignal( $v, $e, $o, false );
+      $this->handlerSignal( $v, $e, $h, true );
    }
 
    // key kezelő beállítása
-   protected function viewHandlerKey( $v, $e, $o, $h ) {
+   protected function elemHandlerKey( $v, $e, $o, $h ) {
       $f = $this->ffi;
-      $c = $this->viewController( $v, self::KEYCTRL );
-      $this->handlerSignal( $c, $e, $o, false );
-      $this->handlerSignal( $c, $e, $h, true, \FFI::addr($this->yesno[0]));
-      $this->handlerSignal( $c, $e, $h, true, \FFI::addr($this->yesno[1]));
+      $this->handlerSignal( $v, $e, $o, false );
+      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[0]));
+      $this->handlerSignal( $v, $e, $h, true, \FFI::addr($this->yesno[1]));
    }
 
    // layout kezelő beállítása
-   protected function viewHandlerLayout( $v, $e, $o, $h ) {
+   protected function elemHandlerLayout( $v, $e, $o, $h ) {
       $f = $this->ffi;
       if ($h)
          $cl = $f->gtk_custom_layout_new( null, $h->data->measure,

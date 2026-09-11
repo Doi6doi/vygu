@@ -6,54 +6,80 @@ require_once(__DIR__."/../autoload.php" );
 
 (new Edit())->run();
 
+/// Notepad-like simple editor
 class Edit {
 
+   public $window;
    public $memo;
+   public $changed;
 
    function run() {
       $this->init();
       Vygu::ins()->run();
    }
 
-   /// view-k elkészítése
+   /// Build window
    function init() {
-      $w = new Window([Window::TITLE=>"Edit",Window::MAIN=>true]);
-      $w->handler( Group::LAYOUT, function($g) { Layout::fill($g,[Layout::GAP=>2]); });
-      $this->memo = $w->add( new Memo() );
-      $w->menu( $this->initMenu() );
-      $this->memo->focus();
+      $this->window = (new Window([Window::TITLE=>"Edit",Window::MAIN=>true]))
+         ->handler( Group::LAYOUT, [$this,"layout"] )
+         ->handler( Window::CLOSING, [$this, "fileQuit"] )
+         ->menu( $this->initMenu() );
+      ($this->memo = $w->add( new Memo() ))
+         ->focus();
    }
 
-   /// menü elkészítése
+   /// Build menu
    function initMenu() {
       $ret = new Menu();
       $f = $ret->add( new Menu("File") );
       $f->add( new Action("New") )
-         ->short( new Key("ctrl+n"))
-         ->handler( Action::FIRE, [$this,"fireNew"]);
+         ->shortcut( "ctrl+n" )
+         ->handler( Elem::FIRE, [$this,"fileNew"]);
       $f->add( new Action("Open"))
-         ->short( new Key("ctrl+o"))
-         ->handler( Action::FIRE, [$this,"fireOpen"]);
+         ->shortcut( "ctrl+o" )
+         ->handler( Elem::FIRE, [$this,"fileOpen"]);
       $f->add( new Action("Save"))
-         ->short( new Key("ctrl+s"))
-         ->handler( Action::FIRE, [$this,"fireSave"]);
+         ->shortcut( "ctrl+s" )
+         ->handler( Elem::FIRE, [$this,"fileSave"]);
       $f->add( new Action("Save as"))
-         ->short( new Key("shift+ctrl+s"))
-         ->handler( Action::FIRE, [$this,"fireSaveAs"]);
+         ->shortcut( "shift+ctrl+s" )
+         ->handler( Elem::FIRE, [$this,"fileSaveAs"]);
       $f->add( new Action("Quit"))
-         ->short( new Key("shift+ctrl+q"))
-         ->handler( Action::FIRE, [$this,"fireQuit"]);
+         ->shortcut( "shift+ctrl+q" )
+         ->handler( Elem::FIRE, [$this,"fileQuit"]);
       $e = $ret->add( new Menu("Edit") );
       $e->add( new Action("Cut"))
-         ->short( new Key("ctrl+x"))
-         ->handler( Action::FIRE, [$this,"fireCut"]);
+         ->shortcut( "ctrl+x" )
+         ->handler( Elem::FIRE, [$this,"editCut"]);
       $e->add( new Action("Copy"))
-         ->short( new Key("ctrl+c"))
-         ->handler( Action::FIRE, [$this,"fireCopy"]);
+         ->shortcut( "ctrl+c" )
+         ->handler( Elem::FIRE, [$this,"editCopy"]);
       $e->add( new Action("Paste"))
-         ->short( new Key("ctrl+v"))
-         ->handler( Action::FIRE, [$this,"firePaste"]);
+         ->shortcut( "ctrl+v" )
+         ->handler( Elem::FIRE, [$this,"editPaste"]);
    }
+
+   /// layout window
+   function layout() {
+      Layout::fill( $this->window, [Layout::GAP=>2] );
+   }
+
+   /// File/new handler
+   function fileNew() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// File/open handler
+   function fileOpen() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// File/save handler
+   function fileSave() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// File/saveAs handler
+   function fileSaveAs() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// File/quit handler
+   function fileQuit() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// Edit/cut handler
+   function editCut() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// Edit/copy handler
+   function editCopy() { Tools::notImpl( $this, __FUNCTION__ ); }
+   /// Edit/paste handler
+   function editPaste() { Tools::notImpl( $this, __FUNCTION__ ); }
 
 }
 

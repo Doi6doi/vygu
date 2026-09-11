@@ -75,11 +75,6 @@ class Vygu {
 	  return call_user_func_array( $h->cb, $args );
    }
 
-   // menü létrehozása
-   function menuCreate(Menu $m) {
-      throw new EVygu("Cannot create menu");
-   }
-
    // hozzáadás menühöz
    function menuAdd(Menu $m, $x) {
       throw new EVygu("Cannot add ".Tools::type($x)." to menu");
@@ -96,9 +91,9 @@ class Vygu {
    }
 
    // handler készítés
-   function handlerCreate(View $v, $e, callable $cb) {
+   function handlerCreate(Elem $v, $e, callable $cb) {
       $ret = new Handler();
-      $ret->view = $v;
+      $ret->elem = $v;
       $ret->cb = $cb;
       return $ret;
    }
@@ -118,9 +113,9 @@ class Vygu {
 	   $this->over = true;
    }
 
-   // view készítés
-   function viewCreate( View $v ) {
-      throw new EVygu("Cannot create view: ".$v->kind() );
+   // elem készítés
+   function elemCreate( Elem $v ) {
+      throw new EVygu("Cannot create elem: ".$v->kind() );
    }
 
    // stílus készítés
@@ -128,8 +123,8 @@ class Vygu {
       throw new EVygu("Cannot create style: ".$v->kind() );
    }
 
-   // view felszámolás
-   function viewDestroy( View $v ) {
+   // elem felszámolás
+   function elemDestroy( Elem $v ) {
    }
 
    // stílus felszámolás
@@ -137,7 +132,7 @@ class Vygu {
    }
 
    // view property
-   function viewProperty( View $v, $p, $x ) {
+   function elemProperty( Elem $v, $p, $x ) {
       throw new EVygu("Cannot access property: ".$v->kind($v).".$p");
    }
 
@@ -164,8 +159,8 @@ class Vygu {
       throw new EVygu("Cannot insert ".Tools::type($x)." to ".$v->kind() );
    }
 
-   // view handler beállítás
-   function viewHandler(View $v, $e, ?Handler $o, ?Handler $h) {
+   // elem handler beállítás
+   function elemHandler(Elem $v, $e, ?Handler $o, ?Handler $h) {
       throw new EVygu("Cannot set handler: ".get_class($v).".$e");
    }
 

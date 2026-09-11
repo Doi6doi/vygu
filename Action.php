@@ -4,16 +4,21 @@ namespace vygu;
 
 /// Window level action
 /// and action constants
-class Action {
+class Action extends Elem {
 
-   /// Actions
    const
-      /// default action (like button press)
-      FIRE = "fire";
-
+      /// Kind constant
+      ACTION = "action";
+      
    /// Properties
    const
-      /// name of the action
-      NAME = "name";
+      /// Keyboard shortcut ([Key])
+      SHORTCUT = "shortcut";   
+
+   function kind() { return self::ACTION; }
+
+   function defArg() { return Elem::NAME; }
+
+   function shortcut( $x = Tools::GET ) { return $this->prop( self::SHORTCUT, $x ); }
 
 }

@@ -3,7 +3,7 @@
 namespace vygu;
 
 /// A widget, that can appear in the GUI
-class View {
+class View extends Elem {
 
    /// Properties
    const
@@ -23,62 +23,12 @@ class View {
       /// Key press/release handler (`h(Key $k)`)
       KEY = "key";
 
-   // a konkrét implementáció
-   public $impl;
    /// Parent [Group]
    public $parent;
-   // extra információ
-   public $data;
-   // az eseménykezelők
-   protected $handlers;
-
-   /// Creates a new View.
-   /// \param $args Property values
-   function __construct($args=null) {
-      $this->handlers = [];
-      Vygu::ins()->viewCreate( $this );
-      $this->initDefArg( $args );
-      $this->initArgs( $args );
-   }
-
-   function __destruct() {
-      $this->handlers = [];
-      Vygu::ins()->viewDestroy($this);
-   }
-
-   /// Returns the kind constant (different for each View)
-   function kind() { Tools::notImpl($this,__FUNCTION__); }
 
    /// Signals the engine to redraw the View
    function invalidate() {
       Vygu::ins()->viewInvalidate($this);
-   }
-
-   /// Sets an event handler
-   /// \param $e Event kind (`KEY`, etc...)
-   /// \param $x Callback (callable)
-   /// \return `$this`
-   function handler($e,$x=null) {
-      $o = Tools::g($this->handlers,$e);
-      if (null === $x) {
-         return $o;
-      } else {
-         $v = Vygu::ins();
-         $xh = $v->handlerCreate($this, $e, $x);
-         $v->viewHandler( $this, $e, $o, $xh );
-         $this->handlers[$e] = $xh;
-         return $this;
-      }
-   }
-
-   /// Simulate an event
-   /// \param $e Event kind (`KEY`, etc...)
-   /// \param $args Event arguments
-   /// \return Return value of handler or null
-   function handle($e,array $args=[]) {
-      if ( ! $h = $this->handler($e))
-         return null;
-      Vygu::ins()->handlerCall( $h, $args );
    }
 
    /// Get or set parent [Group]
@@ -121,25 +71,6 @@ class View {
       return Vygu::ins()->viewCoords($this,$cs,$xs);
    }
 
-   /// Gets or sets a property
-   /// \param $p The property name
-   /// \param $x The new value, or `Tools::GET` for query
-   /// \return The current value if queried
-   function prop($p,$x = Tools::GET ) {
-      return Vygu::ins()->viewProperty($this,$p,$x);
-   }
-
-   /// Does `$p` property exists for this View
-   function isProp($p) {
-      switch ($p) {
-         case self::CURSOR:
-         case self::VISIBLE:
-            return true;
-         default:
-            return false;
-      }
-   }
-
    /// Does `$c` coordinate exist for this View
    function isCoord($c) {
       switch ($c) {
@@ -157,35 +88,23 @@ class View {
       }
    }
 
-   /// Does `$h` handler exist for this View
-   function isHandler($h) {
+   function isProp($p) {
       return false;
-   }
-
-   /// The default argument set
-   /// if `$args` in `__create()` is not an array
-   function defArg() { return null; }
-
-   // default argumentum init
-   function initDefArg( & $args ) {
-      if ( ! is_array( $args )) {
-         if ( null !== $args
-               && $d = $this->defArg())
-            $args = [$d=>$args];
-            else $args = [];
+      switch ($p) {
+         case self::CURSOR:
+         case self::VISIBLE:
+            return true;
+         default:
+            return false;
       }
    }
 
-   // minden argumentum init
    function initArgs( array $args ) {
+      parent::initArgs( $args );
       if ( ! $args ) return;
       foreach ($args as $k=>$v) {
-         if ($this->isProp($k))
-            $this->prop($k,$v);
-         else if ($this->isCoord($k))
+         if ($this->isCoord($k))
             $this->coord($k,$v);
-         else if ($this->isHandler($k))
-            $this->handler($k,$v);
       }
    }
 

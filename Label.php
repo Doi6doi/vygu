@@ -14,7 +14,7 @@ class Label extends View {
    function kind() { return self::LABEL; }
 
    /// [View]::TEXT property
-   function text($x=Tools::GET) { return Vygu::ins()->viewProperty($this,self::TEXT,$x); }
+   function text($x=Tools::GET) { return $this->prop(self::TEXT,$x); }
 
    function isProp($p) {
       switch ($p) {

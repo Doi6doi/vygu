@@ -85,6 +85,16 @@ class Tools {
       return mb_chr($uni,self::UTF);
    }
 
+   /// Char length of an utf8 string
+   static function ulen($s) {
+      return mb_strlen($s,self::UTF);
+   }
+
+   /// Lowercase utf8 string
+   static function ulower($s) {
+      return mb_strtolower($s,self::UTF);
+   }
+
    /// Throws an [EVygu] saying `$obj` not implements `$meth`
    static function notImpl( $obj, $meth ) {
       throw new EVygu( "Not implemented: ".get_class($obj).".$meth" );
