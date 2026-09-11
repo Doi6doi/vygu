@@ -20,8 +20,9 @@ class Label extends View {
       switch ($p) {
          case self::ALIGN:
          case self::STYLE:
-         case self::TEXT:
             return true;
+         case self::TEXT:
+            return self::ISLANG;
          default:
             return parent::isProp($p);
       }

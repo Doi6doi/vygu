@@ -26,4 +26,14 @@ class Menu extends Elem {
       return $i;
    }
 
+   function isProp($p) {
+      switch ($p) {
+         case self::NAME:
+            return self::ISLANG;
+         default:
+            return parent::isProp($p);
+      }
+   }
+
+
 }

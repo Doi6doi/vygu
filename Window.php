@@ -63,9 +63,10 @@ class Window extends Group {
 
    function isProp($p) {
       switch ($p) {
-         case self::TITLE: return true;
+         case self::TITLE: return self::ISLANG;
          default: return parent::isProp($p);
       }
    }
+
 
 }

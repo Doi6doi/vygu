@@ -11,7 +11,9 @@ class Edit {
 
    public $window;
    public $memo;
-   public $changed;
+
+   public $fname;
+   public $ftext;
 
    function run() {
       $this->init();
@@ -20,11 +22,12 @@ class Edit {
 
    /// Build window
    function init() {
-      $this->window = (new Window([Window::TITLE=>"Edit",Window::MAIN=>true]))
+      Lang::ins( Lang::ENV );
+      $this->window = (new Window([Window::TITLE=>"title|Edit",Window::MAIN=>true]))
          ->handler( Group::LAYOUT, [$this,"layout"] )
          ->handler( Window::CLOSING, [$this, "fileQuit"] )
          ->menu( $this->initMenu() );
-      ($this->memo = $w->add( new Memo() ))
+      ($this->memo = $this->window->add( new Memo() ))
          ->focus();
    }
 
@@ -47,7 +50,7 @@ class Edit {
       $f->add( new Action("Quit"))
          ->shortcut( "shift+ctrl+q" )
          ->handler( Elem::FIRE, [$this,"fileQuit"]);
-      $e = $ret->add( new Menu("Edit") );
+      $e = $ret->add( new Menu("menu|Edit") );
       $e->add( new Action("Cut"))
          ->shortcut( "ctrl+x" )
          ->handler( Elem::FIRE, [$this,"editCut"]);
@@ -57,6 +60,7 @@ class Edit {
       $e->add( new Action("Paste"))
          ->shortcut( "ctrl+v" )
          ->handler( Elem::FIRE, [$this,"editPaste"]);
+      return $ret;
    }
 
    /// layout window
@@ -64,16 +68,49 @@ class Edit {
       Layout::fill( $this->window, [Layout::GAP=>2] );
    }
 
+   /// Ask if file needs to be saved
+   function saveQuery() {
+      if ($this->memo->text() != $this->ftext) {
+         switch (Dialog::confirm3("Save changes?")) {
+            case Dialog::YES: $this->fileSave(); break;
+            case Dialog::NO: break;
+            case Dialog::CANCEL: return false;
+         }
+      }
+      return true;
+   }
+
    /// File/new handler
-   function fileNew() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function fileNew() { 
+      if (! $this->saveQuery())
+         return;
+      $this->fname = null;
+      $this->ftext = "";
+      $this->memo->text("");
+   }
+
    /// File/open handler
-   function fileOpen() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function fileOpen() { 
+      if (! $this->saveQuery())
+         return;
+      if (! $this->fname = Dialog::openFile())
+         return;
+      $t = $this->ftext = Tools::loadFile( $this->fname );
+      $this->memo->text( $t );
+   }
+
+   /// File/quit handler
+   function fileQuit() {
+      if (! $this->saveQuery())
+         return false;
+      Vygu::ins()->finish();
+      return true;
+   }
+
    /// File/save handler
    function fileSave() { Tools::notImpl( $this, __FUNCTION__ ); }
    /// File/saveAs handler
    function fileSaveAs() { Tools::notImpl( $this, __FUNCTION__ ); }
-   /// File/quit handler
-   function fileQuit() { Tools::notImpl( $this, __FUNCTION__ ); }
    /// Edit/cut handler
    function editCut() { Tools::notImpl( $this, __FUNCTION__ ); }
    /// Edit/copy handler

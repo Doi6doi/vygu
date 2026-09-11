@@ -440,7 +440,7 @@ class WinApi extends Vygu {
       $u->TranslateMessage( $ma );
       $u->DispatchMessageW( $ma );
       if ( self::WM_QUIT == $m->message ) {
-         $this->over = true;
+         $this->finish();
          return true;
       }
       $this->checkErr();

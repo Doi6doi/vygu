@@ -7,7 +7,9 @@ class Elem {
 
    const
       /// Kind constant
-      ELEM = "elem";
+      ELEM = "elem",
+      /// Property is localized
+      ISLANG = "!lang";
 
    /// Actions
    const
@@ -73,8 +75,12 @@ class Elem {
    /// Gets or sets a property
    /// \param $p The property name
    /// \param $x The new value, or `Tools::GET` for query
-   /// \return The current value if queried
+   /// \return The current value if queried,otherwise `$this`
    function prop($p,$x = Tools::GET ) {
+      if ( null !== $x && Tools::GET != $x 
+         && self::ISLANG == $this->isProp($p)
+      )
+         $x = Lang::s($x);
       return Vygu::ins()->elemProperty($this,$p,$x);
    }
 
@@ -87,7 +93,7 @@ class Elem {
    function isHandler($h) {
       return false;
    }
-
+   
    /// The default argument set
    /// if `$args` in `__create()` is not an array
    function defArg() { return null; }

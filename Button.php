@@ -19,8 +19,9 @@ class Button extends Group {
    function isProp($p) {
       switch ($p) {
          case self::STYLE:
-         case self::TEXT:
             return true;
+         case self::TEXT:
+            return self::ISLANG;
          default:
             return parent::isProp($p);
       }

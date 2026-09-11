@@ -17,8 +17,21 @@ class Action extends Elem {
 
    function kind() { return self::ACTION; }
 
-   function defArg() { return Elem::NAME; }
+   function defArg() { return self::NAME; }
+
+   function name( $x = Tools::GET ) { return $this->prop( self::NAME, $x); }
 
    function shortcut( $x = Tools::GET ) { return $this->prop( self::SHORTCUT, $x ); }
+
+   function isProp($p) {
+      switch ($p) {
+         case self::NAME:
+            return self::ISLANG;
+         case self::SHORTCUT:
+            return true;
+         default:
+            return parent::isProp($p);
+      }
+   }
 
 }

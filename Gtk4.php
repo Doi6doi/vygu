@@ -15,12 +15,15 @@ class Gtk4 extends Vygu {
       KEYCTRL = "keyCtrl",
       LAYOUTMGR = "layoutMgr",
       HANDLERIDS = "handlerIDs",
+      HANDLERREC = "handlerRec",
       HANDLERPTR = "handlerPtr",
-      TEXTBUFFER ="textbuffer",
-      TEXTITER = "textiter",
-      TEXTITER2 = "textiter2",
-      TEXTVIEW = "textview",
-      WINDOWBOX = "windowbox";
+      MENUBAR = "menuBar",
+      MENUBOX = "menuBox",
+      WINDOWBOX = "windowBox",
+      TEXTBUFFER ="textBuffer",
+      TEXTITER = "textIter",
+      TEXTITER2 = "textIter2",
+      TEXTVIEW = "textView";
 
    // temp részek
    const
@@ -74,6 +77,10 @@ class Gtk4 extends Vygu {
          0xffeb => Key::META,
          0xffff => Key::DEL
       ];
+
+   // gtk konstansok
+   const
+      GTK_ORIENTATION_VERTICAL = 1;
 
    // ffi kapcsolat
    protected $ffi;
@@ -146,15 +153,23 @@ class Gtk4 extends Vygu {
          case Action::ACTION:
             $id = Action::ACTION.(++$this->nact);
             $ret = $f->g_simple_action_new( $id, null );
+            $f->g_action_map_add_action( $this->actgrp , $ret );
             $v->data = [ Elem::ID => $id ];
          break;
          case Window::WINDOW:
-            $ret = $f->gtk_window_new();
-            $b = $this->check( $f->gtk_fixed_new(), "Could not create gtk4 fixed" );
+            $wb = $this->check( $f->gtk_fixed_new(),
+               "Could not create window box");
+            $mb = $this->check( $f->gtk_box_new(self::GTK_ORIENTATION_VERTICAL, 0),
+               "Could not create menu box");
+            $f->gtk_widget_set_hexpand( $wb, true );
+            $f->gtk_widget_set_vexpand( $wb, true );
+            $f->gtk_box_append( $mb, $wb );
             $v->data = [
-               self::WINDOWBOX => $b
+               self::MENUBOX=>$mb,
+               self::WINDOWBOX => $wb
             ];
-            $f->gtk_window_set_child( $ret, $b );
+            $ret = $f->gtk_window_new();
+            $f->gtk_window_set_child( $ret, $mb );
          break;
          default: return parent::elemCreate($v);
       }
@@ -168,7 +183,8 @@ class Gtk4 extends Vygu {
          $f->g_menu_append_submenu(
             $m->impl, $x->name(), $x->impl );
       } else if ($x instanceof Action) {
-            
+         $f->g_menu_append( $m->impl, $x->name(), 
+            self::GVYGU.".".$x->data[ Elem::ID ] );
       } else
          parent::menuAdd( $m, $x );
    }
@@ -204,6 +220,7 @@ class Gtk4 extends Vygu {
    function elemName( Elem $v, $x ) {
       $g = Tools::GET === $x;
       switch ($k=$v->kind()) {
+         case Action::ACTION:
          case Menu::MENU:
             if ($g)
                return Tools::g( $v->data, Elem::NAME );
@@ -220,11 +237,12 @@ class Gtk4 extends Vygu {
       $old = Tools::g( $a->data, Action::SHORTCUT );
       if (Tools::GET === $x)
          return $old;
-      if ( null === $x ) {
-         if ( $old  ) 
-            $f->gtk_shortcut_controller_remove_shortcut( $this->sctc, 
-               $a->data[ self::GSHORTCUT ] );
-      } else {
+      if ( $old  ) {
+         $f->gtk_shortcut_controller_remove_shortcut( $this->sctc, 
+            $a->data[ self::GSHORTCUT ] );
+         $a->data[ self::GSHORTCUT ] = $a->data[ Action::SHORTCUT ] = null;
+      }
+      if ( $x ) {
          if ( ! $x instanceof Key )
             $x = Key::parse( $x );
          $ss = $this->shortcutStr( $x );
@@ -236,6 +254,7 @@ class Gtk4 extends Vygu {
          $sc = $f->gtk_shortcut_new( $st, $sa );
          $this->check( $sc, "Could not create shortcut" );
          $a->data[ self::GSHORTCUT ] = $this->sink( $sc );
+         $a->data[ Action::SHORTCUT ] = $x;
       }
       return $a;
    }
@@ -310,6 +329,7 @@ class Gtk4 extends Vygu {
          case View::CURSOR: return $this->viewCursor($v,$x);
          case View::STYLE: return $this->viewStyle($v,$x);
          case View::TEXT: return $this->viewText($v,$x);
+         case Window::MENU: return $this->windowMenu($v,$x);
       }
       $f = $this->ffi;
       $im = $v->impl;
@@ -385,6 +405,31 @@ class Gtk4 extends Vygu {
          }
          if ( Tools::g($tmp,self::LAST) )
             $this->viewCoordLast( $v, $tmp );
+      }
+   }
+
+   function dialog( $kind, array $args ) {
+      $f = $this->ffi;
+      $g = new Guard();
+      switch ($kind) {
+         case Dialog::OPEN:
+            $d = $this->check( $f->gtk_file_dialog_new(),
+               "Coulld not open file dialog");
+            $cb = function( $source, $result, $data ) use ($f,$g,$d) {
+               $gf = $f->gtk_file_dialog_open_finish(
+                  $d, $result, null );
+               $gfc = $f->g_file_get_path( $gf );
+               $g->data = \FFI::string( $gfc );
+               $g->over = true;
+               $f->g_free( $gfc );
+               $f->g_object_unref( $gf );
+            };
+            $f->gtk_file_dialog_open( $d, null, null, $cb, null );
+            $this->run( $g );
+            return $g->data;
+         break;
+         default:
+            return parent::dialog( $kind, $args );
       }
    }
 
@@ -518,7 +563,7 @@ class Gtk4 extends Vygu {
                $i = $v->data[ self::TEXTITER ];
                $i2 = $v->data[ self::TEXTITER2 ];
                $f->gtk_text_buffer_get_bounds( $b, $i, $i2 );
-               return \FFI::string( $f->gtk_text_buffer_get_text( $b, $i, $i2, false ) );
+               return $f->gtk_text_buffer_get_text( $b, $i, $i2, false );
             } else {
                $f->gtk_text_buffer_set_text( $b, "$x", -1 );
             }
@@ -527,6 +572,28 @@ class Gtk4 extends Vygu {
             return parent::elemProperty($v,View::TEXT,$x);
       }
       return $v;
+   }
+
+   // window menüje
+   protected function windowMenu( Window $w, $x ) {
+      $old = Tools::g( $w->data, Menu::MENU );
+      if ( Tools::GET == $x )
+         return $old;
+      $f = $this->ffi;
+      $mb = $w->data[ self::MENUBOX ];
+      if ( $old ) {
+         $f->gtk_box_remove( $mb, $w->data[self::MENUBAR] );
+         $w->data[self::MENUBAR] = $w->data[Menu::MENU] = null;
+      }
+      if ( $x ) {
+         $mr = $this->check( $f->gtk_popover_menu_bar_new_from_model( $x->impl ),
+            "Could not create menu bar");
+         $f->gtk_widget_insert_action_group( $mr, self::GVYGU, $this->actgrp );
+         $f->gtk_box_prepend( $mb, $mr );
+         $w->data[ self::MENUBAR ] = $mr;
+         $w->data[ Menu::MENU ] = $x;
+      }
+      return $w;
    }
 
    // richedit készítése és összerakása
@@ -573,7 +640,7 @@ class Gtk4 extends Vygu {
       $c = $f->new( "sSignalCallback" );
       $c->c = function( $impl, $udata ) use ($h,$inv) {
          $ret = $this->callCallback($h->cb);
-         return $inv ? $ret : ! $ret;
+         return $inv ? ! $ret : $ret;
       };
       $h->data = [
          self::HANDLERPTR => $c->c,
@@ -610,7 +677,7 @@ class Gtk4 extends Vygu {
       $c->allocate = function( $widget, $width, $height, $base ) use ($h) {
          return $this->callCallback( $h->cb, [$h->data[ Elem::ELEM ]] );
       };
-      $h->data = $c;
+      $h->data[ self::HANDLERREC ] = $c;
    }
 
    // signal kezelő be-vagy kikapcsolása
@@ -650,10 +717,12 @@ class Gtk4 extends Vygu {
    // layout kezelő beállítása
    protected function elemHandlerLayout( $v, $e, $o, $h ) {
       $f = $this->ffi;
-      if ($h)
-         $cl = $f->gtk_custom_layout_new( null, $h->data->measure,
-            $h->data->allocate );
-         else $cl = null;
+      if ($h) {
+         $hr = $h->data[ self::HANDLERREC ];
+         $cl = $f->gtk_custom_layout_new( null, $hr->measure, $hr->allocate  );
+      } else {
+         $cl = null;
+      }
       $f->gtk_widget_set_layout_manager( $this->contImpl($v), $cl );
    }
 

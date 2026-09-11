@@ -25,8 +25,8 @@ class Vygu {
    protected static $ins;
    // hashek
    protected $maps;
-   // kilépő bool
-   protected $over;
+   // kilépési feltétel
+   protected $mainGuard;
 
    // új vygu készítés
    protected static function create( $args ) {
@@ -39,21 +39,24 @@ class Vygu {
 		 }
 	  }
 	  switch ($e) {
-		 case WinApi::WINAPI: return new WinApi($args);
-		 case Gtk4::GTK4: return new Gtk4($args);
-		 default: throw new EVygu("Unknown engine: $e");
+        case WinApi::WINAPI: return new WinApi($args);
+ 		  case Gtk4::GTK4: return new Gtk4($args);
+ 		  default: throw new EVygu("Unknown engine: $e");
 	  }
    }
 
    function __construct($args) {
       $this->maps = [];
+      $this->mainGuard = new Guard();
    }
 
-   /// Run the even loop until termination
-   function run() {
-      while (! $this->runOver()) {
+   /// Run the even loop until guard is set
+   /// \param $guard The guard condition
+   function run( ?Guard $guard = null ) {
+      if ( ! $guard ) 
+         $guard = $this->mainGuard;
+      while (! $guard->over )
          $this->runStep( true );
-      }
    }
 
    /// Do a single step on the event loop
@@ -103,14 +106,9 @@ class Vygu {
 	  throw new EVygu("Cannot get screen coord: $c");
    }
 
-   // vége van-e a futtatásnak
-   function runOver() {
-      return $this->over;
-   }
-
    // futtatás befejezése
    function finish() {
-	   $this->over = true;
+      $this->mainGuard->over = true;
    }
 
    // elem készítés
@@ -121,6 +119,11 @@ class Vygu {
    // stílus készítés
    function styleCreate( Style $s ) {
       throw new EVygu("Cannot create style: ".$v->kind() );
+   }
+
+   /// fájl megnyitási dialog
+   function dialog( $kind, array $args ) {
+      throw new EVygu("Cannot create dialog: $kind");
    }
 
    // elem felszámolás
