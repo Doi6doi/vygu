@@ -113,6 +113,12 @@ class Tools {
       return $ret;
    }
 
+   /// Saves a file or throws [EVygu]
+   static function saveFile($fname, $data) {
+      if  ( false === file_put_contents($fname, $data) )
+         throw new EVygu("Cannot load file: $fname");
+   }
+
    /// Shows debug values for all arguments on `STDERR`
    static function debug() {
       fwrite( STDERR, self::str(func_get_args())."\n" );

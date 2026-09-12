@@ -21,8 +21,6 @@ class Gtk4 extends Vygu {
       MENUBOX = "menuBox",
       WINDOWBOX = "windowBox",
       TEXTBUFFER ="textBuffer",
-      TEXTITER = "textIter",
-      TEXTITER2 = "textIter2",
       TEXTVIEW = "textView";
 
    // temp részek
@@ -94,10 +92,14 @@ class Gtk4 extends Vygu {
    protected $ints;
    // igen/nem konstansok
    protected $yesno;
-   /// action számozás
+   // action számozás
    protected $nact;
-   /// action group
+   // action group
    protected $actgrp;
+   // textiterátor
+   protected $iter;
+   // második textiterátor
+   protected $iter2;
 
    function __construct($args) {
       parent::__construct($args);
@@ -108,6 +110,8 @@ class Gtk4 extends Vygu {
       $this->allo = $f->new("GtkAllocation");
       $this->rect = $f->new("GdkRectangle");
       $this->actgrp = $f->g_simple_action_group_new();
+      $this->iter = $f->new("GtkTextIter");
+      $this->iter2 = $f->new("GtkTextIter");
       $this->ints = $f->new("int[4]");
       $this->yesno = $f->new("int[2]");
       $this->yesno[0] = 0;
@@ -215,6 +219,72 @@ class Gtk4 extends Vygu {
          return $v;
       }
    }
+   
+   // View position jellemzője
+   function viewPosition( View $v, $x ) {
+      $f = $this->ffi;
+      $g = Tools::GET === $x;
+      switch ($v->kind()) {
+         case Memo::MEMO:
+         case Rich::RICH:
+            $b = $v->data[ self::TEXTBUFFER ];
+            if ($g) {
+               $this->bufferSelection( $b, $ia, $ib );
+               return $f->gtk_text_iter_get_offset( $ia );
+            } else {
+               $f->gtk_text_buffer_get_iter_at_offset( $b, $ia, $x );
+               $f->gtk_text_buffer_select_range( $b, $ia, $ia );
+            }
+         break;
+         default: return parent::elemProperty( $v, View::POSITION, $x );
+      }
+   }
+   
+   // View selLength jellemzője
+   function viewSelLength( View $v, $x ) {
+      $f = $this->ffi;
+      $g = Tools::GET === $x;
+      switch ($v->kind()) {
+         case Memo::MEMO:
+         case Rich::RICH:
+            $b = $v->data[ self::TEXTBUFFER ];
+            $this->bufferSelection( $b, $ia, $ib );
+            if ($g) {
+               return $f->gtk_text_iter_get_offset( $ib )
+                  - $f->gtk_text_iter_get_offset( $ia );
+            } else {
+               $f->gtk_text_iter_forward_chars( $ib, $x );
+               $f->gtk_text_buffer_select_range( $b, $ia, $ib );
+            }
+         break;
+         default: return parent::elemProperty( $v, View::SELLENGTH, $x );
+      }
+   }
+
+   function textPart( Edit $v, $at, $len, $x = Tools::GET ) {
+      $f = $this->ffi;
+      $g = Tools::GET === $x;
+      $ia = \FFI::addr( $this->iter );
+      $ib = \FFI::addr( $this->iter2 );
+      switch ($v->kind()) {
+         case Memo::MEMO:
+         case Rich::RICH:
+            $b = $v->data[ self::TEXTBUFFER ];
+            $bl = $f->gtk_text_buffer_get_char_count( $b );
+            $this->textClamp( $at, 0, $bl );
+            $this->textClamp( $len, 0, $bl-$at );
+            $f->gtk_text_buffer_get_iter_at_offset( $b, $ia, $at );
+            $f->gtk_text_buffer_get_iter_at_offset( $b, $ib, $at+$len );
+            if ($g) {
+               return $f->gtk_text_buffer_get_text( $b, $ia, $ib, false );
+            } else {
+               $f->gtk_text_buffer_delete( $b, $ia, $ib );
+               $f->gtk_text_buffer_insert( $b, $ia, $x, -1 );
+            }
+         break;
+         default: throw new EVygu("Cannot access text part: ".$v->kind());
+      }
+   }
 
    // Elem name jellemzője
    function elemName( Elem $v, $x ) {
@@ -305,28 +375,14 @@ class Gtk4 extends Vygu {
       }
    }
 
-   // insert művelet
-   function viewInsert( View $v, $at, $x ) {
-      $f = $this->ffi;
-      switch ($k = $v->kind()) {
-         case Memo::MEMO:
-         case Rich::RICH:
-            $x = Tools::str($x);
-            $b = $v->data[ self::TEXTBUFFER ];
-            $i = $v->data[ self::TEXTITER ];
-            $this->bufferMove( $b, $at, $i );
-            $f->gtk_text_buffer_insert( $b, $i, $x, -1 );
-        break;
-        default: return parent::viewInsert( $v, $at, $x );
-      }
-   }
-
    function elemProperty( Elem $v, $p, $x ) {
       switch ($p) {
          case Action::SHORTCUT: return $this->actionShortcut( $v, $x );
          case Elem::NAME: return $this->elemName($v,$x);
          case View::ALIGN: return $this->viewAlign($v,$x);
          case View::CURSOR: return $this->viewCursor($v,$x);
+         case View::POSITION: return $this->viewPosition($v,$x);
+         case View::SELLENGTH: return $this->viewSelLength($v,$x);
          case View::STYLE: return $this->viewStyle($v,$x);
          case View::TEXT: return $this->viewText($v,$x);
          case Window::MENU: return $this->windowMenu($v,$x);
@@ -413,24 +469,54 @@ class Gtk4 extends Vygu {
       $g = new Guard();
       switch ($kind) {
          case Dialog::OPEN:
+         case Dialog::SAVE:
             $d = $this->check( $f->gtk_file_dialog_new(),
-               "Coulld not open file dialog");
-            $cb = function( $source, $result, $data ) use ($f,$g,$d) {
-               $gf = $f->gtk_file_dialog_open_finish(
-                  $d, $result, null );
-               $gfc = $f->g_file_get_path( $gf );
-               $g->data = \FFI::string( $gfc );
-               $g->over = true;
-               $f->g_free( $gfc );
-               $f->g_object_unref( $gf );
-            };
-            $f->gtk_file_dialog_open( $d, null, null, $cb, null );
-            $this->run( $g );
-            return $g->data;
+               "Could not open file dialog");
+         break;
+         case Dialog::CONFIRM:
+            $txt = Tools::g( $args, Dialog::TEXT );
+            $buts = Tools::g( $args, Dialog::BUTTONS );
+            $d = $this->check( $f->gtk_alert_dialog_new( $txt ),
+               "Could not open alert dialog");
+            $cbuts = $this->cppChar( $buts, $carrs );
+            $f->gtk_alert_dialog_set_buttons( $d, $cbuts );
          break;
          default:
             return parent::dialog( $kind, $args );
       }
+      $cb = function( $source, $result, $data ) use ($f,$g,$d,$kind) {
+         switch ($kind) {
+            case Dialog::OPEN:
+            case Dialog::SAVE:
+               if (Dialog::OPEN == $kind)
+                  $gf = $f->gtk_file_dialog_open_finish( $d, $result, null );
+                  else $gf = $f->gtk_file_dialog_save_finish( $d, $result, null );
+               if ($gf) {
+                  $gfc = $f->g_file_get_path( $gf );
+                  $g->data = \FFI::string( $gfc );
+                  $f->g_free( $gfc );
+                  $f->g_object_unref( $gf );
+               }
+            break;
+            case Dialog::CONFIRM:
+               $g->data = $f->gtk_alert_dialog_choose_finish( $d, $result, null );
+            break;
+         }
+         $g->over = true;
+      };
+      switch ($kind) {
+         case Dialog::OPEN:
+            $f->gtk_file_dialog_open( $d, null, null, $cb, null );
+         break;
+         case Dialog::SAVE:
+            $f->gtk_file_dialog_save( $d, null, null, $cb, null );
+         break;
+         case Dialog::CONFIRM:
+            $f->gtk_alert_dialog_choose( $d, null, null, $cb, null );
+         break;
+      }
+      $this->run( $g );
+      return $g->data;
    }
 
    function viewParent( View $v, ?Group $g ) {
@@ -454,6 +540,24 @@ class Gtk4 extends Vygu {
       $s->data = $this->check( $this->ffi->gdk_display_get_default(),
          "Could not get display" );
    }
+   
+   function clipboardValue( Clipboard $c, $x ) {
+      $f = $this->ffi;
+      $cb = $f->gdk_display_get_clipboard( Screen::ins()->data );      
+      if (Tools::GET === $x) {
+         $g = new Guard();
+         $f->gdk_clipboard_read_text_async( $cb, null, 
+            function ( $source, $res, $data ) use ($cb, $f, $g) {
+               $ret = $f->gdk_clipboard_read_text_finish( $cb, $res, null );
+               $g->data = $ret;
+               $g->over = true;
+            }, null );
+         $this->run( $g );
+         return $g->data;
+      } else { 
+         $f->gdk_clipboard_set_text( $cb, $x );
+      }
+   }
 
    function screenCoord( Screen $s, $c ) {
       $f = $this->ffi;
@@ -475,6 +579,32 @@ class Gtk4 extends Vygu {
       return parent::screenCoord($s,$c);
    }
 
+
+
+   /// buffer kijelölés iter-jei
+   protected function bufferSelection( $b, &$ia, &$ib ) {
+      $ia = \FFI::addr( $this->iter );
+      $ib = \FFI::addr( $this->iter2 );
+      $this->ffi->gtk_text_buffer_get_selection_bounds( $b, $ia, $ib );
+   }
+  
+   /// php string tömbből C char **
+   protected function cppChar( $arr, &$carr ) {
+      $f = $this->ffi;
+      $n = count($arr);
+      $rarr = $f->new("char *[".($n+1)."]");
+      $carr = [];
+      for ($i=0; $i<$n; ++$i) {
+         $li = strlen( $arr[$i] );
+         $carr[$i] = $f->new("char[".($li+1)."]");
+         for ($j=0; $j<$li; ++$j)
+            $carr[$i][$j] = $arr[$i][$j];
+         $rarr[$i] = \FFI::addr( $carr[$i][0] );
+      }
+      $carr [] = $rarr;
+      return \FFI::addr($rarr[0]);
+   }
+  
    /// gtk-s shortcut string
    protected function shortcutStr( Key $k ) {
       if ($u = $k->unicode)
@@ -558,15 +688,7 @@ class Gtk4 extends Vygu {
          break;
          case Memo::MEMO:
          case Rich::RICH:
-            $b = $v->data[self::TEXTBUFFER];
-            if ($g) {
-               $i = $v->data[ self::TEXTITER ];
-               $i2 = $v->data[ self::TEXTITER2 ];
-               $f->gtk_text_buffer_get_bounds( $b, $i, $i2 );
-               return $f->gtk_text_buffer_get_text( $b, $i, $i2, false );
-            } else {
-               $f->gtk_text_buffer_set_text( $b, "$x", -1 );
-            }
+            return $v->part( false, true, $x );
          break;
          default:
             return parent::elemProperty($v,View::TEXT,$x);
@@ -605,27 +727,12 @@ class Gtk4 extends Vygu {
       $this->check( $s, "Could not create gtk text view" );
       $b = $f->gtk_text_view_get_buffer( $v );
       $this->check( $b, "Could not get gtk text buffer" );
-      $i = \FFI::addr( $f->new("GtkTextIter") );
-      $i2 = \FFI::addr( $f->new("GtkTextIter") );
       $f->gtk_scrolled_window_set_child( $s, $v );
       $r->data = [
          self::TEXTVIEW => $v,
-         self::TEXTBUFFER => $b,
-         self::TEXTITER => $i,
-         self::TEXTITER2 => $i2
+         self::TEXTBUFFER => $b
       ];
       return $s;
-   }
-
-   // bufferen belüli mozgás
-   protected function bufferMove( $b, $at, $i ) {
-      $f = $this->ffi;
-      if ( false === $at )
-         $f->gtk_text_buffer_get_start_iter( $b, $i );
-      else if ( true === $at )
-         $f->gtk_text_buffer_get_end_iter( $b, $i );
-      else
-         $f->gtk_text_buffer_get_iter_at_offset( $b, $i, $at );
    }
 
    // floating reference sink
@@ -692,7 +799,7 @@ class Gtk4 extends Vygu {
          $s = $this->eventSignal($v,$e,$data);
          $h->data[ self::HANDLERIDS ] [] =
             $f->g_signal_connect_data( $im, $s,
-               $f->cast("gpointer",$h->data[ self::HANDLERPTR ]),
+               $f->cast("Ptr",$h->data[ self::HANDLERPTR ]),
                $data, null, 0 );
       } else {
          foreach ( $h->data[ self::HANDLERIDS ] as $i  )

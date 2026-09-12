@@ -34,6 +34,12 @@ class Lang {
    
    /// Converts string to localized form
    function ss( $x ) {
+      if (is_array($x)) {
+         $ret = [];
+         foreach ($x as $i)
+            $ret [] = $this->ss($i);
+         return $ret;
+      }
       if (null !== $ret = Tools::g($this->trans,$x))
          return $ret;
       if (false !== $i = strpos( $x, "|" ))

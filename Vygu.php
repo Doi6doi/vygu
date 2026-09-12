@@ -121,6 +121,11 @@ class Vygu {
       throw new EVygu("Cannot create style: ".$v->kind() );
    }
 
+   // clipboard lekérés vagy beállítás
+   function clipboardValue( Clipboard $c, $x ) {
+      throw new EVygu("Cannot access clipboard");
+   }
+
    /// fájl megnyitási dialog
    function dialog( $kind, array $args ) {
       throw new EVygu("Cannot create dialog: $kind");
@@ -128,6 +133,11 @@ class Vygu {
 
    // elem felszámolás
    function elemDestroy( Elem $v ) {
+   }
+
+   // edit szövegrész
+   function textPart( Edit $v, $at, $len, $x = Tools::GET ) {
+      throw new EVygu("Cannot get text part: ".$v->kind());
    }
 
    // stílus felszámolás
@@ -157,11 +167,6 @@ class Vygu {
       return $ret;
    }
 
-   // insert művelet
-   function viewInsert( View $v, $at, $x ) {
-      throw new EVygu("Cannot insert ".Tools::type($x)." to ".$v->kind() );
-   }
-
    // elem handler beállítás
    function elemHandler(Elem $v, $e, ?Handler $o, ?Handler $h) {
       throw new EVygu("Cannot set handler: ".get_class($v).".$e");
@@ -189,7 +194,16 @@ class Vygu {
 
    // vissza hash készítés
    protected function createMap( $name ) {
-	  throw new EVygu("Unknown map: $name");
+	   throw new EVygu("Unknown map: $name");
+   }
+
+   /// text cordináta korlátozása
+   protected function textClamp( & $x, $min, $max ) {
+      if (true === $x)
+         return $max;
+      else if (false === $x)
+         return $min;
+      return max( $min, min( $x, $max ));
    }
 
 }

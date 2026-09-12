@@ -4,10 +4,10 @@ namespace vygu;
 
 require_once(__DIR__."/../autoload.php" );
 
-(new Edit())->run();
+(new VyguEdit())->run();
 
 /// Notepad-like simple editor
-class Edit {
+class VyguEdit {
 
    public $window;
    public $memo;
@@ -108,15 +108,37 @@ class Edit {
    }
 
    /// File/save handler
-   function fileSave() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function fileSave() { 
+      if ( ! $this->fname )
+         return $this->fileSaveAs();
+      $t = $this->memo->text();
+      Tools::saveFile( $this->fname, $t );
+      $this->ftext = $t;
+   }
+
    /// File/saveAs handler
-   function fileSaveAs() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function fileSaveAs() {
+      if ( ! $fn = Dialog::saveFile() )
+         return;
+      $this->fname = $fn;
+      return $this->fileSave();
+   }
+
    /// Edit/cut handler
-   function editCut() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function editCut() {
+      $this->editCopy();
+      $this->memo->selPart( "" );
+  }
+   
    /// Edit/copy handler
-   function editCopy() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function editCopy() { 
+      Clipboard::ins()->value( $this->memo->selPart() );
+   }
+      
    /// Edit/paste handler
-   function editPaste() { Tools::notImpl( $this, __FUNCTION__ ); }
+   function editPaste() { 
+      $this->memo->selPart( Clipboard::ins()->value() );
+   }
 
 }
 

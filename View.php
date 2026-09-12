@@ -11,6 +11,10 @@ class View extends Elem {
       ALIGN = "align",
       /// Cursor ([Cursor]:: `DEFAULT`, `WAIT`)
       CURSOR = "cursor",
+      /// Position
+      POSITION = "position",
+      /// Selection length
+      SELLENGTH = "selLength",
       /// [Style] describing colors and font properties
       STYLE = "style",
       /// Text of a View (string)
