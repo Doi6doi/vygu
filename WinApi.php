@@ -11,9 +11,13 @@ class WinApi extends Vygu {
 
    const
       CBUTTON = "BUTTON",
+      CEDIT = "EDIT",
       CVYGU = "Vygu",
       CSTATIC = "STATIC",
       ERRLEN = 1024;
+
+   const
+      HMENU = "hmenu";
 
    // temp adatok
    const
@@ -26,10 +30,20 @@ class WinApi extends Vygu {
       BN_CLICKED = 0,
 
       COLOR_WINDOW = 5,
+    
+      CS_HREDRAW = 2,
+      CS_VREDRAW = 1,
 
       DT_CALCRECT = 0x400,
 
+      ES_AUTOVSCROLL = 0x40,
+      ES_MULTILINE = 0x4,
+      ES_WANTRETURN = 0x1000,
+
       GWL_STYLE = -16,
+
+      MF_POPUP = 0x10,
+      MF_STRING = 0,
 
       VK_SHIFT   = 0x10,
       VK_CONTROL = 0x11,
@@ -78,7 +92,9 @@ class WinApi extends Vygu {
       WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY,
          self::WM_KEYDOWN, self::WM_KEYUP, self::WM_SIZE ],
 
+      WS_EX_CLIENTEDGE = 0x200,
       WS_VISIBLE = 0x10000000,
+      WS_VSCROLL = 0x200000,
       WS_CHILD = 0x40000000,
       WS_POPUP = 0x80000000,
       WS_OVERLAPPEDWINDOW = 0xcf0000,
@@ -167,6 +183,8 @@ class WinApi extends Vygu {
    protected $keyState;
    // bájtok
    protected $wchars;
+   // action sorszám
+   protected $nact;
 
    function __construct($args) {
 	   parent::__construct($args);
@@ -200,6 +218,7 @@ class WinApi extends Vygu {
          "Could not get instance");
       $wc = $u->new("WNDCLASSEXW");
       $wc->size = \FFI::sizeof($wc);
+      $wc->style = 3;
       $wc->wndProc = $wp->f;
       $wc->clsName = $cn;
       $wc->inst = $this->hins;
@@ -216,6 +235,10 @@ class WinApi extends Vygu {
       $k = $this->ffk;
       $ret = null;
       switch ($h = $v->kind()) {
+         case Action::ACTION:
+            $v->data  = [ Elem::ID => ++$this->nact ];
+            return;
+         break;
          case Button::BUTTON:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CBUTTON ),
             null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
@@ -227,6 +250,16 @@ class WinApi extends Vygu {
             null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
             null, null, $this->hins, null );
          break;
+         case Memo::MEMO:
+            $ret = $u->CreateWindowExW( self::WS_EX_CLIENTEDGE, $this->swp( self::CEDIT ),
+            null, self::WS_POPUP | self::WS_VISIBLE | self::WS_VSCROLL
+            | self::ES_MULTILINE | self::ES_AUTOVSCROLL | self::ES_WANTRETURN,
+            0, 0, 10, 10, null, null, $this->hins, null );
+         break;
+         case Menu::MENU:
+            $ret = $u->CreatePopupMenu();
+            $v->data = [];
+         break;
          case Window::WINDOW:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CVYGU ),
                null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100,
@@ -237,7 +270,8 @@ class WinApi extends Vygu {
       $this->checkW( $ret, "Could not create winapi $h" );
       $v->impl = $ret;
       $this->wnds[ $this->ptri( $ret ) ] = \WeakReference::create($v);
-      if (Window::WINDOW != $h) {
+      if ( ! in_array( $h, [Window::WINDOW, Menu::MENU, Action::ACTION] )) {
+Tools::debug("ret",$ret,(bool)$ret);
          $this->checkW( $this->ffc->SetWindowSubclass(
             $ret,$this->subPrc->f,1,0),
             "Could not set window subclass");
@@ -303,7 +337,8 @@ class WinApi extends Vygu {
             if ( ! $v->handle( Window::CLOSING ))
                return true;
          case self::WM_SIZE:
-            $v->handle( Group::LAYOUT );
+            if ($v instanceof Group)
+               $v->layout();
             return true;
          case self::WM_COMMAND:
             if ( ! $s = $this->viewByHwnd( $u->cast("HWND",$lparam)))
@@ -345,10 +380,14 @@ class WinApi extends Vygu {
 
    function elemProperty( Elem $v, $p, $x ) {
       switch ($p) {
+         case Action::SHORTCUT: 
+         case Elem::NAME: 
+            return $this->dataProperty($v,$p,$x);
          case View::VISIBLE: return $this->viewVisible($v,$x);
          case View::TEXT: case Window::TITLE:
             return $this->viewText($v,$x);
          case View::ALIGN: return $this->viewAlign($v,$x);
+         case Window::MENU: return $this->windowMenu($v,$x);
          default:
             return parent::elemProperty($v,$p,$x);
       }
@@ -382,6 +421,58 @@ class WinApi extends Vygu {
       }
       return $v;
    }
+
+   // ablak-hoz tartozó menü
+   function windowMenu($v,$x) {
+      $old = Tools::g( $v->data, [Window::MENU] );
+      if ( Tools::GET === $x )
+         return $old;
+      if ( $x === $old )
+         return $v;
+      $u = $this->ffu;
+      $m = $u->CreateMenu();
+      foreach ($x->items as $i) {
+         switch ($i->kind()) {
+            case Action::ACTION:
+               $ret = $u->AppendMenuW( $m, self::MF_STRING,
+                  $i->data[ Elem::ID ], $this->sw( $i->name() ));
+            break;
+            case Menu::MENU:
+               $ret = $u->AppendMenuW( $m, self::MF_POPUP, 
+                  $this->ptri($i->impl), $this->sw( $i->name()));
+            break;
+            default: throw new EVygu("Could not append menu");
+         }
+         $this->checkW( $ret, "Could not appedn menu");
+      }
+      if ( $old ) {
+         SetMenu( $v->impl, null );
+         DestroyMenu( $old->data[ self::HMENU ] );
+      }
+      $this->checkW( $u->SetMenu($v->impl, $m),
+         "Could not set menu");
+      $v->data[ self::HMENU ] = $m;
+      $v->data[ Window::MENU ] = $x;
+      return $v;
+   }
+
+   function menuAdd(Menu $m, $x) {
+      $u = $this->ffu;
+      switch ($k = $x->kind()) {
+         case Menu::MENU:
+            return $this->checkW( $u->AppendMenuW( $m->impl, self::MF_POPUP, 
+               $this->ptri($x->impl), $this->sw( $x->name())), 
+               "Could not add submenu");
+         break;
+         case Action::ACTION:
+            return $this->checkW( $u->AppendMenuW( $m->impl, self::MF_STRING,
+               $x->data[ Elem::ID ], $this->sw( $x->name() )),
+               "Could not add action");
+         break;
+      }
+      return parent::menuAdd($m,$x);
+   }
+   
 
    // view igazítás
    function viewAlign($v,$x) {
@@ -446,11 +537,6 @@ class WinApi extends Vygu {
       $this->checkErr();
       return true;
    }
-
-   function finish() {
-      $this->ffu->PostQuitMessage(0);
-   }
-
 
    function viewByHwnd( $hwnd ) {
       $i = $this->ptri( $hwnd );

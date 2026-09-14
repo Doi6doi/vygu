@@ -55,8 +55,9 @@ class Vygu {
    function run( ?Guard $guard = null ) {
       if ( ! $guard ) 
          $guard = $this->mainGuard;
-      while (! $guard->over )
+      while (! $guard->over ) {
          $this->runStep( true );
+       }
    }
 
    /// Do a single step on the event loop
@@ -96,7 +97,6 @@ class Vygu {
    // handler készítés
    function handlerCreate(Elem $v, $e, callable $cb) {
       $ret = new Handler();
-      $ret->elem = $v;
       $ret->cb = $cb;
       return $ret;
    }
@@ -147,6 +147,14 @@ class Vygu {
    // view property
    function elemProperty( Elem $v, $p, $x ) {
       throw new EVygu("Cannot access property: ".$v->kind($v).".$p");
+   }
+
+   // data-ban tárolt property elérése
+   function dataProperty( $v, $p, $x ) {
+      if (Tools::GET === $x)
+         return Tools::g( $v->data, $p );
+      $v->data[$p] = "$x";
+      return $v;
    }
 
    // view koordináta

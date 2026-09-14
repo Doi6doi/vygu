@@ -23,7 +23,8 @@ class VyguEdit {
    /// Build window
    function init() {
       Lang::ins( Lang::ENV );
-      $this->window = (new Window([Window::TITLE=>"title|Edit",Window::MAIN=>true]))
+      $this->window = new Window([Window::TITLE=>"title|Edit",Window::MAIN=>true]);
+      $this->window
          ->handler( Group::LAYOUT, [$this,"layout"] )
          ->handler( Window::CLOSING, [$this, "fileQuit"] )
          ->menu( $this->initMenu() );

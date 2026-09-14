@@ -17,14 +17,14 @@ class Group extends View {
    /// Contained views
    public $items;
 
-   function kind() { return self::GROUP; }
-
    /// Creates a new Group
    /// \param $args Property values
    function __construct($args=null) {
       parent::__construct($args);
       $this->items = [];
    }
+
+   function kind() { return self::GROUP; }
 
    /// Number of contained Views
    function count() {
@@ -34,7 +34,7 @@ class Group extends View {
    /// Add a [View] to the Group
    function add( View $v ) {
       $v->parent($this);
-      $this->handle( self::LAYOUT );
+      $this->layout();
       return $v;
    }
 
@@ -43,13 +43,19 @@ class Group extends View {
       if ( $at < 0 || $this->count() <= $at )
          return;
       $this->items[$at]->parent(null);
-      $this->handle( self::LAYOUT );
+      $this->layout();
    }
 
    /// Remove all Views from the Group
    function clear() {
       while ($n = $this->count() )
          $this->drop( $n-1 );
+   }
+
+   /// recompute layout
+   function layout() {
+      $this->handle( self::LAYOUT );
+//       $this->invalidate();
    }
 
    function isHandler($h) {

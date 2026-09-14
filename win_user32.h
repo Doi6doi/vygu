@@ -7,6 +7,9 @@ typedef struct { LONG x; LONG y; } POINT;
 typedef struct { HWND hwnd; UINT message; WPARAM wParam; LPARAM lParam;
     DWORD time; POINT pt; DWORD lPrivate; } MSG;
 
+BOOL AppendMenuW( HMENU, UINT flags, UINT_PTR item, WSTR name );
+HMENU CreateMenu();
+HMENU CreatePopupMenu();
 HWND CreateWindowExW( DWORD exStyle, WSTR clsName,
    WSTR wndName, DWORD style, int x, int y, int width,
    int height, HWND parent, HMENU menu, HINSTANCE instance, 
@@ -30,6 +33,7 @@ BOOL MoveWindow(HWND, int X, int Y, int width, int height, BOOL repaint);
 void PostQuitMessage(int nExitCode);
 ATOM RegisterClassExW(WNDCLASSEXW *c);
 HWND SetFocus(HWND);
+BOOL SetMenu(HWND, HMENU);
 HWND SetParent(HWND child, HWND hWndNewParent );
 UINT_PTR SetWindowLongPtrW(HWND, int nIndex, LONG_PTR dwNewLong);   
 BOOL SetWindowTextW( HWND, WSTR s );
