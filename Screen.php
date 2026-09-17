@@ -27,4 +27,12 @@ class Screen {
       return Vygu::ins()->screenCoord( $this, $c );
    }
 
+   /// Get more screen coordinates
+   function coords( array $cs ) {
+      $ret = [];
+      foreach ($cs as $c)
+         $ret [] = $this->coord($c);
+      return $ret;
+   }
+
 }

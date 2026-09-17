@@ -32,6 +32,7 @@ HCURSOR LoadCursorW(HINSTANCE hInstance, WSTR lpCursorName);
 BOOL MoveWindow(HWND, int X, int Y, int width, int height, BOOL repaint);
 void PostQuitMessage(int nExitCode);
 ATOM RegisterClassExW(WNDCLASSEXW *c);
+LRESULT SendMessageW( HWND, UINT msg, WPARAM, LPARAM );
 HWND SetFocus(HWND);
 BOOL SetMenu(HWND, HMENU);
 HWND SetParent(HWND child, HWND hWndNewParent );

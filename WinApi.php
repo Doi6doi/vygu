@@ -14,7 +14,8 @@ class WinApi extends Vygu {
       CEDIT = "EDIT",
       CVYGU = "Vygu",
       CSTATIC = "STATIC",
-      ERRLEN = 1024;
+      ERRLEN = 1024,
+      PATHLEN = 1024;
 
    const
       HMENU = "hmenu";
@@ -27,6 +28,8 @@ class WinApi extends Vygu {
       TRECT = "tRect";
 
    const
+      BCM_GETIDEALSIZE = 0x1601,
+      
       BN_CLICKED = 0,
 
       COLOR_WINDOW = 5,
@@ -36,6 +39,9 @@ class WinApi extends Vygu {
 
       DT_CALCRECT = 0x400,
 
+      EM_GETSEL = 0xb0,
+      EM_SETSEL = 0xb1,
+
       ES_AUTOVSCROLL = 0x40,
       ES_MULTILINE = 0x4,
       ES_WANTRETURN = 0x1000,
@@ -44,6 +50,11 @@ class WinApi extends Vygu {
 
       MF_POPUP = 0x10,
       MF_STRING = 0,
+
+      OFN_FILEMUSTEXIST = 0x1000,
+      OFN_NOCHANGEDIR = 8,
+      OFN_OVERWRITEPROMPT = 2,
+      OFN_PATHMUSTEXIST = 0x800,
 
       VK_SHIFT   = 0x10,
       VK_CONTROL = 0x11,
@@ -157,8 +168,12 @@ class WinApi extends Vygu {
    protected $ffg;
    // comctl32.dll
    protected $ffc;
+   // comdlg32.dll
+   protected $ffd;
    // hwnd -> View
    protected $wnds;
+   // id -> Action
+   protected $acs;
    // saját wndproc
    protected $wndPrc;
    // subclass proc
@@ -175,6 +190,8 @@ class WinApi extends Vygu {
    protected $err;
    // hasznos rect
    protected $rect;
+   // hasznos size
+   protected $siz;
    // kurzorok betöltve
    protected $crsrs;
    // DC számolásokhoz
@@ -183,12 +200,17 @@ class WinApi extends Vygu {
    protected $keyState;
    // bájtok
    protected $wchars;
+   // longok
+   protected $longs;
    // action sorszám
    protected $nact;
+   // dummy parent
+   protected $dummy;
 
    function __construct($args) {
 	   parent::__construct($args);
       $this->wnds = [];
+      $this->acs = [];
       $this->swps = [];
       $this->crsrs = [];
       $this->initNwms();
@@ -201,10 +223,15 @@ class WinApi extends Vygu {
       $g =  $this->ffg = \FFI::cdef( $ht.$hg, "gdi32.dll" );
       $hc = Tools::loadFile( __DIR__."/win_comctl32.h");
       $c = $this->ffc = \FFI::cdef( $ht.$hc, "comctl32.dll" );
+      $hd = Tools::loadFile( __DIR__."/win_comdlg32.h");
+      $this->ffd = \FFI::cdef( $ht.$hd, "comdlg32.dll" );
       $this->wndMsg = $u->new("MSG");
       $this->rect = $u->new("RECT");
+      $this->siz = $u->new("SIZE");
       $this->keyState = $u->new("BYTE[256]");
       $this->wchars = $u->new("WCHAR[2]");
+      $this->longs = $u->new("LONG[2]");
+      $this->activateContext( "comctl6.manifest");
       $sp = $this->subPrc = $c->new("SSUBCLASSPROC");
       $sp->f = function($hwnd,$msg,$wparam,$lparam,$sub,$ref) {
          return $this->subProc($hwnd,$msg,$wparam,$lparam);
@@ -216,6 +243,11 @@ class WinApi extends Vygu {
       $cn = $this->swp( self::CVYGU );
       $this->hins = $this->checkW( $k->GetModuleHandleW(null),
          "Could not get instance");
+      $this->dummy = $this->check( $u->CreateWindowExW( 0, 
+         $this->swp( self::CSTATIC ), null, 
+         self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
+         null, null, $this->hins, null ), 
+         "Could not create dummy window" );
       $wc = $u->new("WNDCLASSEXW");
       $wc->size = \FFI::sizeof($wc);
       $wc->style = 3;
@@ -237,24 +269,25 @@ class WinApi extends Vygu {
       switch ($h = $v->kind()) {
          case Action::ACTION:
             $v->data  = [ Elem::ID => ++$this->nact ];
+            $this->acs[ $this->nact ] = \WeakReference::create($v);
             return;
          break;
          case Button::BUTTON:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CBUTTON ),
-            null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
-            null, null, $this->hins, null );
+            null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
+            $this->dummy, null, $this->hins, null );
          break;
          case Group::GROUP:
          case Label::LABEL:
             $ret = $u->CreateWindowExW( 0, $this->swp( self::CSTATIC ),
-            null, self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
-            null, null, $this->hins, null );
+            null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
+            $this->dummy, null, $this->hins, null );
          break;
          case Memo::MEMO:
             $ret = $u->CreateWindowExW( self::WS_EX_CLIENTEDGE, $this->swp( self::CEDIT ),
-            null, self::WS_POPUP | self::WS_VISIBLE | self::WS_VSCROLL
+            null, self::WS_CHILD | self::WS_VISIBLE | self::WS_VSCROLL
             | self::ES_MULTILINE | self::ES_AUTOVSCROLL | self::ES_WANTRETURN,
-            0, 0, 10, 10, null, null, $this->hins, null );
+            0, 0, 30, 30, $this->dummy, null, $this->hins, null );
          break;
          case Menu::MENU:
             $ret = $u->CreatePopupMenu();
@@ -271,7 +304,6 @@ class WinApi extends Vygu {
       $v->impl = $ret;
       $this->wnds[ $this->ptri( $ret ) ] = \WeakReference::create($v);
       if ( ! in_array( $h, [Window::WINDOW, Menu::MENU, Action::ACTION] )) {
-Tools::debug("ret",$ret,(bool)$ret);
          $this->checkW( $this->ffc->SetWindowSubclass(
             $ret,$this->subPrc->f,1,0),
             "Could not set window subclass");
@@ -296,6 +328,8 @@ Tools::debug("ret",$ret,(bool)$ret);
 
    // WCHAR * stringgé alakítás
    function ws( $w, $l ) {
+      if (null === $l)
+         for ($l=0; 0 != $w[$l]; ++$l);
       $u = $this->ffu;
       $ret = \FFI::string( $u->cast("char *",\FFI::addr($w)), 2*$l );
       return mb_convert_encoding( $ret, Tools::UTF, Tools::U16L );
@@ -337,10 +371,18 @@ Tools::debug("ret",$ret,(bool)$ret);
             if ( ! $v->handle( Window::CLOSING ))
                return true;
          case self::WM_SIZE:
-            if ($v instanceof Group)
-               $v->layout();
+            if (! $v instanceof Group)
+               return;
+            $v->layout();
             return true;
          case self::WM_COMMAND:
+            if ( ! $lparam ) {
+               $id = $wparam & 0xffff;
+               if ($a = $this->actById( $id )) {
+                  $a->fire();
+                  return true;
+               }
+            }
             if ( ! $s = $this->viewByHwnd( $u->cast("HWND",$lparam)))
                return;
             switch ( $e = ($wparam >> 16) & 0xffff ) {
@@ -365,15 +407,23 @@ Tools::debug("ret",$ret,(bool)$ret);
       return $x;
    }
 
+   // check handle windows hibával
+   function checkH( $x, $err ) {
+      $i = $this->ptri($x);
+      if ( 0 == $i || -1 == $i)
+         throw new EVygu("$err: ".$this->lastError());
+      return $x;
+   }
+
    // utolsó hibaüzenet
    function lastError() {
       $k = $this->ffk;
       $ret = $k->GetLastError();
       if ( ! $ret ) return "";
       $buf = $k->new("WCHAR[".self::ERRLEN."]");
-      if ( $l = $k->FormatMessageW( 0x1200, null, $ret, 0,
-         $buf, self::ERRLEN, null )
-      )
+      $l = $k->FormatMessageW( 0x1200, null, $ret, 0,
+         \FFI::addr($buf[0]), self::ERRLEN, null );
+      if ($l)
          return sprintf( "%s (%s)", $this->ws( $buf, $l ), $ret );
          else return "$ret";
    }
@@ -383,6 +433,8 @@ Tools::debug("ret",$ret,(bool)$ret);
          case Action::SHORTCUT: 
          case Elem::NAME: 
             return $this->dataProperty($v,$p,$x);
+         case View::POSITION: return $this->viewPosition($v,$x);
+         case View::SELLENGTH: return $this->viewSelLength($v,$x);
          case View::VISIBLE: return $this->viewVisible($v,$x);
          case View::TEXT: case Window::TITLE:
             return $this->viewText($v,$x);
@@ -420,6 +472,49 @@ Tools::debug("ret",$ret,(bool)$ret);
          $u->ShowWindow( $v->impl, self::SW_HIDE );
       }
       return $v;
+   }
+
+   // view position-je
+   function viewPosition($v,$x) {
+      $u = $this->ffu;
+      $g = Tools::GET === $x;
+      switch ($v->kind()) {
+         case Edit::EDIT:
+         case Memo::MEMO:
+         case Rich::RICH:
+            $lp = $this->ptri( \FFI::addr( $this->longs[0] ));
+            if ($g) {
+               $u->SendMessageW( $v->impl, self::EM_GETSEL, $lp, 0 );
+               return $this->longs[0];
+            } else {
+               $this->longs[0] = $x;
+               $u->SendMessageW( $v->impl, self::EM_SETSEL, $lp, 0 );
+            }
+         default: 
+            return parent::elemProperty($v,View::POSITION,$x);
+      }
+      return $this;
+   }
+
+   // view selLength-je
+   function viewSelLength($v,$x) {
+      $u = $this->ffu;
+      $g = Tools::GET === $x;
+      switch ($v->kind()) {
+         case Edit::EDIT:
+         case Memo::MEMO:
+         case Rich::RICH:
+            $lp0 = $this->ptri( \FFI::addr( $this->longs[0] ));
+            $lp1 = $this->ptri( \FFI::addr( $this->longs[1] ));
+            $u->SendMessageW( $v->impl, self::EM_GETSEL, $lp0, $lp1 );
+            if ($g)
+               return $this->longs[1]-$this->longs[0];
+            $this->longs[1] = $this->longs[0] + $x;
+            $u->SendMessageW( $v->impl, self::EM_SETSEL, $lp0, $lp1 );
+         default: 
+            return parent::elemProperty($v,View::POSITION,$x);
+      }
+      return $this;
    }
 
    // ablak-hoz tartozó menü
@@ -506,16 +601,9 @@ Tools::debug("ret",$ret,(bool)$ret);
    function viewParent( View $v, ?Group $g ) {
       $u = $this->ffu;
       $vi = $v->impl;
-      $s = $this->viewStyleWord($v);
-      if ($g) {
-         $s = $s | self::WS_CHILD & ~ self::WS_POPUP;
-         $this->viewStyleWord($v,$s);
+      if ($g)
          $u->SetParent($vi, $g->impl);
-      } else {
-         $s = $s | self::WS_POPUP & ~ self::WS_CHILD;
-         $this->viewStyleWord($v,$s);
-         $u->SetParent($vi, null);
-      }
+         else $u->SetParent($vi, null);
    }
 
    function runStep( $wait ) {
@@ -538,16 +626,25 @@ Tools::debug("ret",$ret,(bool)$ret);
       return true;
    }
 
+   // view hwnd alapján
    function viewByHwnd( $hwnd ) {
       $i = $this->ptri( $hwnd );
       if ( $ret = Tools::g( $this->wnds, $i ) )
          return $ret->get();
          else return null;
    }
+   
+   // Action id alapján
+   function actByID( $id ) {
+      if ( $ret = Tools::g( $this->acs, $id ))
+         return $ret->get();
+      return null;
+   }
 
-   /// c pointer -> int
+   // c pointer -> int
    function ptri( $p ) {
-      return $p - $this->ffu->cast("void*",0);
+      $u = $this->ffu;
+      return $u->cast("void *",$p) - $u->cast("void*",0);
    }
 
    function screenCoord( Screen $s, $c ) {
@@ -645,10 +742,14 @@ Tools::debug("ret",$ret,(bool)$ret);
             return $r->bottom - $r->top;
          break;
          case Layout::DEFWIDTH:
+            if ( Tools::g( $v->handlers, View::MEASURE ))
+               return $v->handle( View::MEASURE, [$v, $c] );
             $r = $this->temp( $v, self::TDEF, $tmp );
             return $r[0];
          break;
          case Layout::DEFHEIGHT:
+            if ( Tools::g( $v->handlers, View::MEASURE ))
+               return $v->handle( View::MEASURE, [$v, $c] );
             $r = $this->temp( $v, self::TDEF, $tmp );
             return $r[1];
          break;
@@ -658,6 +759,33 @@ Tools::debug("ret",$ret,(bool)$ret);
 
    function viewFocus(View $v) {
       $this->ffu->SetFocus( $v->impl );
+   }
+
+   function dialog( $kind, array $args ) {
+      $d = $this->ffd;
+      switch ($kind) {
+         case Dialog::OPEN:
+         case Dialog::SAVE:
+            $s = $d->new("OPENFILENAMEW");
+            $fn = $d->new("WCHAR[".self::PATHLEN."]");
+            $s->lStructSize = \FFI::sizeof( $s );
+            $s->lpstrFile = \FFI::addr($fn[0]);
+            $s->nMaxFile = self::PATHLEN;
+            if ( Dialog::OPEN == $kind) {
+               $s->Flags = self::OFN_FILEMUSTEXIST | self::OFN_PATHMUSTEXIST;
+               $r = $d->GetOpenFileNameW( \FFI::addr($s));
+            } else {
+               $s->Flags = self::OFN_OVERWRITEPROMPT 
+                  | self::OFN_PATHMUSTEXIST | self::OFN_NOCHANGEDIR;
+               $r = $d->GetSaveFileNameW( \FFI::addr($s));
+            }
+            if ( $r )
+               return $this->ws( $fn, null );
+               else return null;
+         break;
+         default: 
+            return parent::dialog( $kind, $args );
+      }
    }
 
    // Key eseményből
@@ -740,8 +868,14 @@ Tools::debug("ret",$ret,(bool)$ret);
                \FFI::addr($r), self::DT_CALCRECT );
             return [$r->right-$r->left,$r->bottom-$r->top];
          break;
-         default: throw new EVygu("Cannot get default size: $k");
+         case Button::BUTTON:
+            $zp = $this->ptri( \FFI::addr( $this->siz ) );
+            if ( $u->SendMessageW( $v->impl, self::BCM_GETIDEALSIZE, 0, $zp ))
+               return [$this->siz->cx, $this->siz->cy];
+         break;
+         default: 
       }
+      throw new EVygu("Cannot get default size: $k");
    }
 
    /// nwms hash létrehozása
@@ -789,5 +923,20 @@ Tools::debug("ret",$ret,(bool)$ret);
          default: return parent::createMap($name);
       }
    }
+
+   // activationcontext aktiválás
+   protected function activateContext( $fname ) {
+      $k = $this->ffk;
+      $act = $k->new("ACTCTXW");
+      $act->cbSize = \FFI::sizeof($act);
+      $act->lpSource = $this->swp( __DIR__."\\".$fname );
+      $acok = $k->new("ULONG_PTR");
+      $h = $this->checkH( $k->CreateActCtxW(\FFI::addr($act)),
+         "Could not create activation context");
+      $this->checkW($k->ActivateActCtx($h, \FFI::addr($acok)),
+         "Could not activate context");
+   }
+      
+   
 
 }

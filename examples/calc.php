@@ -86,7 +86,11 @@ class Calc {
          case "+": $this->old += $this->curr; break;
          case "-": $this->old -= $this->curr; break;
          case "*": $this->old *= $this->curr; break;
-         case "/": $this->old /= $this->curr; break;
+         case "/": 
+            if ( ! $this->curr )
+               $this->old = null;
+               else $this->old /= $this->curr; 
+         break;
          default:
             if ( null !== $this->curr )
                $this->old = $this->curr;

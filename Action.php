@@ -19,9 +19,16 @@ class Action extends Elem {
 
    function defArg() { return self::NAME; }
 
+   /// `NAME` property
    function name( $x = Tools::GET ) { return $this->prop( self::NAME, $x); }
 
+   /// `SHORTCUT` property ([Key])
    function shortcut( $x = Tools::GET ) { return $this->prop( self::SHORTCUT, $x ); }
+
+   /// fire the action
+   function fire() {
+      $this->handle( self::FIRE );
+   }
 
    function isProp($p) {
       switch ($p) {

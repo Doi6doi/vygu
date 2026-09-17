@@ -23,8 +23,7 @@ class VyguEdit {
    /// Build window
    function init() {
       Lang::ins( Lang::ENV );
-      $this->window = new Window([Window::TITLE=>"title|Edit",Window::MAIN=>true]);
-      $this->window
+      ($this->window = new Window([Window::TITLE=>"title|Edit",Window::MAIN=>true]))
          ->handler( Group::LAYOUT, [$this,"layout"] )
          ->handler( Window::CLOSING, [$this, "fileQuit"] )
          ->menu( $this->initMenu() );
@@ -71,7 +70,7 @@ class VyguEdit {
 
    /// Ask if file needs to be saved
    function saveQuery() {
-      if ($this->memo->text() != $this->ftext) {
+      if ($this->memo->text() !== $this->ftext) {
          switch (Dialog::confirm3("Save changes?")) {
             case Dialog::YES: $this->fileSave(); break;
             case Dialog::NO: break;

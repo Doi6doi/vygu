@@ -28,7 +28,7 @@ class Elem {
    // extra információ
    public $data;
    // az eseménykezelők
-   protected $handlers;
+   public $handlers;
 
    function __construct($args=null) {
       $this->handlers = [];
@@ -69,7 +69,7 @@ class Elem {
    function handle($e,array $args=[]) {
       if ( ! $h = $this->handler($e))
          return null;
-      Vygu::ins()->handlerCall( $h, $args );
+      return Vygu::ins()->handlerCall( $h, $args );
    }
 
    /// Gets or sets a property

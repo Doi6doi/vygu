@@ -148,4 +148,43 @@ class Layout {
       }
    }
 
+   /// Measure group which items are sticked together horizontally
+   /// or vertically
+   /// \param $g The group to measure
+   /// \param $coord The measured coordinate (`DEFHEIGHT`,`DEFWIDTH`)
+   /// \param $args Extra arguments:
+   ///   `DIR`: stick direction
+   ///   `GAP`: gap between Views
+   static function sticked( Group $g, $coord, array $args = [] ) {
+      $ga = Tools::g($args,self::GAP);
+      $dir = Tools::g( $args, self::DIR );
+      $vert = in_array( $dir, [self::TOP, self::BOTTOM] );
+      $vc = $vert ? Layout::DEFHEIGHT : Layout::DEFWIDTH;
+      switch ($coord) {
+         case Layout::DEFWIDTH:
+         case Layout::DEFHEIGHT:
+            $ret = 0;
+            foreach ($g->items as $i) {
+               $cig = $ga + $i->coord( $coord );
+               if ( $vc != $coord )
+                  $ret = max( $ret, $cig );
+                  else $ret += $cig;
+            }
+            return $ga + $ret;
+         break;
+         default: throw new EVygu("Cannot measure $coord");
+      }
+   }
+
+   /// Get maximum coord of items
+   /// or vertically
+   /// \param $g The group to measure
+   /// \param $coord The measured coordinate
+   static function max( Group $g, $coord ) {
+      $ret = 0;
+      foreach ($g->items as $i)
+         $ret = max( $ret, $i->coord( $coord ));
+      return $ret;         
+   }
+
 }

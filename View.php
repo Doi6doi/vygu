@@ -11,6 +11,8 @@ class View extends Elem {
       ALIGN = "align",
       /// Cursor ([Cursor]:: `DEFAULT`, `WAIT`)
       CURSOR = "cursor",
+      /// Parent group
+      PARENT = "parent",
       /// Position
       POSITION = "position",
       /// Selection length
@@ -25,7 +27,9 @@ class View extends Elem {
    /// Handlers
    const
       /// Key press/release handler (`h(Key $k)`)
-      KEY = "key";
+      KEY = "key",
+      /// Returns a coordinate
+      MEASURE = "measure";
 
    /// Parent [Group]
    public $parent;
@@ -45,6 +49,7 @@ class View extends Elem {
       $this->parent = $x;
       if ($x)
          $x->items[] = $this;
+      return $this;
    }
 
    /// `View::VISIBLE` property
@@ -93,10 +98,19 @@ class View extends Elem {
    }
 
    function isProp($p) {
-      return false;
       switch ($p) {
          case self::CURSOR:
+         case self::PARENT:
          case self::VISIBLE:
+            return true;
+         default:
+            return false;
+      }
+   }
+
+   function isHandler($h) {
+      switch ($h) {
+         case self::MEASURE:
             return true;
          default:
             return false;
