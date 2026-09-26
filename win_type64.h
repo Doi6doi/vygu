@@ -18,6 +18,7 @@ typedef WORD ATOM;
 typedef uint32_t DWORD;
 typedef uint64_t WPARAM;
 typedef int64_t LPARAM;
+typedef size_t SIZE_T;
 typedef int64_t LRESULT;
 typedef const WCHAR * LPCWSTR;
 typedef LPCWSTR WSTR;

@@ -8,6 +8,7 @@ typedef struct { HWND hwnd; UINT message; WPARAM wParam; LPARAM lParam;
     DWORD time; POINT pt; DWORD lPrivate; } MSG;
 
 BOOL AppendMenuW( HMENU, UINT flags, UINT_PTR item, WSTR name );
+BOOL CloseClipboard();
 HMENU CreateMenu();
 HMENU CreatePopupMenu();
 HWND CreateWindowExW( DWORD exStyle, WSTR clsName,
@@ -19,6 +20,7 @@ LRESULT DefWindowProcW( HWND wnd, UINT Msg, WPARAM wParam,
 LRESULT DispatchMessageW(const MSG *lpMsg);   
 int DrawTextW(HDC, WSTR text, int count, RECT *rect, UINT format);
 BOOL GetClientRect(HWND hWnd, RECT *lpRect);
+HANDLE GetClipboardData(  UINT uFormat );
 BOOL GetKeyboardState(BYTE *lpKeyState);
 BOOL GetMessageW( MSG  *lpMsg, HWND hWnd, UINT wMsgFilterMin,
    UINT wMsgFilterMax );   
@@ -30,9 +32,11 @@ BOOL InvalidateRect( HWND, const RECT *, BOOL erase );
 BOOL IsWindowVisible( HWND );
 HCURSOR LoadCursorW(HINSTANCE hInstance, WSTR lpCursorName);
 BOOL MoveWindow(HWND, int X, int Y, int width, int height, BOOL repaint);
+BOOL OpenClipboard( HWND );
 void PostQuitMessage(int nExitCode);
 ATOM RegisterClassExW(WNDCLASSEXW *c);
 LRESULT SendMessageW( HWND, UINT msg, WPARAM, LPARAM );
+HANDLE SetClipboardData( UINT uFormat, HANDLE hMem);
 HWND SetFocus(HWND);
 BOOL SetMenu(HWND, HMENU);
 HWND SetParent(HWND child, HWND hWndNewParent );

@@ -122,7 +122,7 @@ class Vygu {
    }
 
    // clipboard lekérés vagy beállítás
-   function clipboardValue( Clipboard $c, $x ) {
+   function clipboardValue( Clipboard $c, $x = Tools::GET ) {
       throw new EVygu("Cannot access clipboard");
    }
 

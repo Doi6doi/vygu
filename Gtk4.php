@@ -541,7 +541,7 @@ class Gtk4 extends Vygu {
          "Could not get display" );
    }
    
-   function clipboardValue( Clipboard $c, $x ) {
+   function clipboardValue( Clipboard $c, $x = Tools::GET ) {
       $f = $this->ffi;
       $cb = $f->gdk_display_get_clipboard( Screen::ins()->data );      
       if (Tools::GET === $x) {

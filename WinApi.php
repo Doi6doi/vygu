@@ -9,112 +9,6 @@ class WinApi extends Vygu {
       /// Kind constant
       WINAPI = "winapi";
 
-   const
-      CBUTTON = "BUTTON",
-      CEDIT = "EDIT",
-      CVYGU = "Vygu",
-      CSTATIC = "STATIC",
-      ERRLEN = 1024,
-      PATHLEN = 1024;
-
-   const
-      HMENU = "hmenu";
-
-   // temp adatok
-   const
-      TCONT = "tCont",
-      TDEF  = "tDef",
-      TLAST = "tLast",
-      TRECT = "tRect";
-
-   const
-      BCM_GETIDEALSIZE = 0x1601,
-      
-      BN_CLICKED = 0,
-
-      COLOR_WINDOW = 5,
-    
-      CS_HREDRAW = 2,
-      CS_VREDRAW = 1,
-
-      DT_CALCRECT = 0x400,
-
-      EM_GETSEL = 0xb0,
-      EM_SETSEL = 0xb1,
-
-      ES_AUTOVSCROLL = 0x40,
-      ES_MULTILINE = 0x4,
-      ES_WANTRETURN = 0x1000,
-
-      GWL_STYLE = -16,
-
-      MF_POPUP = 0x10,
-      MF_STRING = 0,
-
-      OFN_FILEMUSTEXIST = 0x1000,
-      OFN_NOCHANGEDIR = 8,
-      OFN_OVERWRITEPROMPT = 2,
-      OFN_PATHMUSTEXIST = 0x800,
-
-      VK_SHIFT   = 0x10,
-      VK_CONTROL = 0x11,
-      VK_MENU    = 0x12,
-      VK_PAUSE   = 0x13,
-      VK_CAPITAL = 0x14,
-      VK_ESCAPE  = 0x1b,
-      VK_PRIOR   = 0x21,
-      VK_NEXT    = 0x22,
-      VK_END     = 0x23,
-      VK_HOME    = 0x24,
-      VK_LEFT    = 0x25,
-      VK_UP      = 0x26,
-      VK_RIGHT   = 0x27,
-      VK_DOWN    = 0x28,
-      VK_INSERT  = 0x2d,
-      VK_DELETE  = 0x2e,
-      VK_F1      = 0x70,
-      VK_F2      = 0x71,
-      VK_F3      = 0x72,
-      VK_F4      = 0x73,
-      VK_F5      = 0x74,
-      VK_F6      = 0x75,
-      VK_F7      = 0x76,
-      VK_F8      = 0x77,
-      VK_F9      = 0x78,
-      VK_F10     = 0x79,
-      VK_F11     = 0x7a,
-      VK_F12     = 0x7b,
-      VK_LWIN    = 0x5b,
-      VK_LSHIFT  = 0xa0,
-      VK_RSHIFT  = 0xa1,
-      VK_LCONTROL = 0xa2,
-      VK_RCONTROL = 0xa3,
-      VK_LMENU   = 0xa4,
-      VK_RMENU   = 0xa5,
-
-      WM_DESTROY = 2,
-      WM_SIZE = 5,
-      WM_CLOSE = 0x10,
-      WM_QUIT = 0x12,
-      WM_KEYDOWN = 0x100,
-      WM_KEYUP = 0x101,
-      WM_COMMAND =0x111,
-
-      WM_ALL = [ self::WM_CLOSE, self::WM_COMMAND, self::WM_DESTROY,
-         self::WM_KEYDOWN, self::WM_KEYUP, self::WM_SIZE ],
-
-      WS_EX_CLIENTEDGE = 0x200,
-      WS_VISIBLE = 0x10000000,
-      WS_VSCROLL = 0x200000,
-      WS_CHILD = 0x40000000,
-      WS_POPUP = 0x80000000,
-      WS_OVERLAPPEDWINDOW = 0xcf0000,
-
-      SPI_GETWORKAREA = 0x30,
-
-      SW_HIDE = 0,
-      SW_SHOW = 5;
-
    // mapek
    const
       MALIGN = [
@@ -127,144 +21,65 @@ class WinApi extends Vygu {
          0x7f02=>Cursor::WAIT
       ],
       MSPECS = [
-         self::VK_CAPITAL => Key::CAPS,
-         self::VK_ESCAPE => Key::ESC,
-         self::VK_PRIOR => Key::PGUP,
-         self::VK_NEXT => Key::PGDN,
-         self::VK_END => Key::END,
-         self::VK_HOME => Key::HOME,
-         self::VK_LEFT => Key::LEFT,
-         self::VK_UP => Key::UP,
-         self::VK_RIGHT => Key::RIGHT,
-         self::VK_DOWN => Key::DOWN,
-         self::VK_INSERT => Key::INS,
-         self::VK_DELETE => Key::DEL,
-         self::VK_F1 => Key::F1,
-         self::VK_F2 => Key::F2,
-         self::VK_F3 => Key::F3,
-         self::VK_F4 => Key::F4,
-         self::VK_F5 => Key::F5,
-         self::VK_F6 => Key::F6,
-         self::VK_F7 => Key::F7,
-         self::VK_F8 => Key::F8,
-         self::VK_F9 => Key::F9,
-         self::VK_F10 => Key::F10,
-         self::VK_F11 => Key::F11,
-         self::VK_F12 => Key::F12,
-         self::VK_LWIN => Key::META,
-         self::VK_LSHIFT => Key::LSHIFT,
-         self::VK_RSHIFT => Key::RSHIFT,
-         self::VK_LCONTROL => Key::LCTRL,
-         self::VK_RCONTROL => Key::RCTRL,
-         self::VK_LMENU => Key::ALT,
-         self::VK_RMENU => Key::ALTGR
+         WinApiWrap::VK_CAPITAL => Key::CAPS,
+         WinApiWrap::VK_ESCAPE => Key::ESC,
+         WinApiWrap::VK_PRIOR => Key::PGUP,
+         WinApiWrap::VK_NEXT => Key::PGDN,
+         WinApiWrap::VK_END => Key::END,
+         WinApiWrap::VK_HOME => Key::HOME,
+         WinApiWrap::VK_LEFT => Key::LEFT,
+         WinApiWrap::VK_UP => Key::UP,
+         WinApiWrap::VK_RIGHT => Key::RIGHT,
+         WinApiWrap::VK_DOWN => Key::DOWN,
+         WinApiWrap::VK_INSERT => Key::INS,
+         WinApiWrap::VK_DELETE => Key::DEL,
+         WinApiWrap::VK_F1 => Key::F1,
+         WinApiWrap::VK_F2 => Key::F2,
+         WinApiWrap::VK_F3 => Key::F3,
+         WinApiWrap::VK_F4 => Key::F4,
+         WinApiWrap::VK_F5 => Key::F5,
+         WinApiWrap::VK_F6 => Key::F6,
+         WinApiWrap::VK_F7 => Key::F7,
+         WinApiWrap::VK_F8 => Key::F8,
+         WinApiWrap::VK_F9 => Key::F9,
+         WinApiWrap::VK_F10 => Key::F10,
+         WinApiWrap::VK_F11 => Key::F11,
+         WinApiWrap::VK_F12 => Key::F12,
+         WinApiWrap::VK_LWIN => Key::META,
+         WinApiWrap::VK_LSHIFT => Key::LSHIFT,
+         WinApiWrap::VK_RSHIFT => Key::RSHIFT,
+         WinApiWrap::VK_LCONTROL => Key::LCTRL,
+         WinApiWrap::VK_RCONTROL => Key::RCTRL,
+         WinApiWrap::VK_LMENU => Key::ALT,
+         WinApiWrap::VK_RMENU => Key::ALTGR
       ];
 
-   // user32.dll
-   protected $ffu;
-   // kernel32.dll
-   protected $ffk;
-   // gdi32.dll
-   protected $ffg;
-   // comctl32.dll
-   protected $ffc;
-   // comdlg32.dll
-   protected $ffd;
+   /// wrapper
+   protected $wrap;
    // hwnd -> View
    protected $wnds;
    // id -> Action
    protected $acs;
-   // saját wndproc
-   protected $wndPrc;
-   // subclass proc
-   protected $subPrc;
-   // felső üzenet objektum
-   protected $wndMsg;
-   // az aktuális hInstance
-   protected $hins;
-   // wide stringek tárolva
-   protected $swps;
-   // szükséges wm-ek
-   protected $nwms;
    // kivétel callback-ben
    protected $err;
-   // hasznos rect
-   protected $rect;
-   // hasznos size
-   protected $siz;
-   // kurzorok betöltve
-   protected $crsrs;
-   // DC számolásokhoz
-   protected $dc;
-   // billentyű állapotok
-   protected $keyState;
-   // bájtok
-   protected $wchars;
-   // longok
-   protected $longs;
    // action sorszám
    protected $nact;
-   // dummy parent
-   protected $dummy;
 
    function __construct($args) {
 	   parent::__construct($args);
+      $w = $this->wrap = new WinApiWrap();
       $this->wnds = [];
       $this->acs = [];
-      $this->swps = [];
-      $this->crsrs = [];
-      $this->initNwms();
-      $ht = Tools::loadFile( __DIR__."/win_type".Tools::sysBits().".h" );
-	   $hu = Tools::loadFile( __DIR__."/win_user32.h" );
-	   $u = $this->ffu = \FFI::cdef( $ht.$hu, "user32.dll" );
-      $hk = Tools::loadFile( __DIR__."/win_kernel32.h" );
-      $k = $this->ffk = \FFI::cdef( $ht.$hk, "kernel32.dll" );
-      $hg = Tools::loadFile( __DIR__."/win_gdi32.h");
-      $g =  $this->ffg = \FFI::cdef( $ht.$hg, "gdi32.dll" );
-      $hc = Tools::loadFile( __DIR__."/win_comctl32.h");
-      $c = $this->ffc = \FFI::cdef( $ht.$hc, "comctl32.dll" );
-      $hd = Tools::loadFile( __DIR__."/win_comdlg32.h");
-      $this->ffd = \FFI::cdef( $ht.$hd, "comdlg32.dll" );
-      $this->wndMsg = $u->new("MSG");
-      $this->rect = $u->new("RECT");
-      $this->siz = $u->new("SIZE");
-      $this->keyState = $u->new("BYTE[256]");
-      $this->wchars = $u->new("WCHAR[2]");
-      $this->longs = $u->new("LONG[2]");
-      $this->activateContext( "comctl6.manifest");
-      $sp = $this->subPrc = $c->new("SSUBCLASSPROC");
-      $sp->f = function($hwnd,$msg,$wparam,$lparam,$sub,$ref) {
+      $w->subPrc->f = function($hwnd,$msg,$wparam,$lparam,$sub,$ref) {
          return $this->subProc($hwnd,$msg,$wparam,$lparam);
       };
-      $wp = $this->wndPrc = $u->new("SWNDPROC");
-      $wp->f = function($hwnd,$msg,$wparam,$lparam) {
+      $w->wndPrc->f = function($hwnd,$msg,$wparam,$lparam) {
          return $this->wndProc($hwnd,$msg,$wparam,$lparam);
       };
-      $cn = $this->swp( self::CVYGU );
-      $this->hins = $this->checkW( $k->GetModuleHandleW(null),
-         "Could not get instance");
-      $this->dummy = $this->check( $u->CreateWindowExW( 0, 
-         $this->swp( self::CSTATIC ), null, 
-         self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
-         null, null, $this->hins, null ), 
-         "Could not create dummy window" );
-      $wc = $u->new("WNDCLASSEXW");
-      $wc->size = \FFI::sizeof($wc);
-      $wc->style = 3;
-      $wc->wndProc = $wp->f;
-      $wc->clsName = $cn;
-      $wc->inst = $this->hins;
-      $wc->back = $u->cast("void *",self::COLOR_WINDOW);
-      $wc->cursor = $this->fromCursor( Cursor::DEFAULT );
-      $this->checkW( $u->RegisterClassExW( \FFI::addr($wc) ),
-         "Could not register window class");
-      $this->dc = $this->checkW( $g->CreateCompatibleDC(null),
-         "Could not create DC" );
    }
 
    function elemCreate( Elem $v ) {
-      $u = $this->ffu;
-      $k = $this->ffk;
+      $w = $this->wrap;
       $ret = null;
       switch ($h = $v->kind()) {
          case Action::ACTION:
@@ -272,67 +87,23 @@ class WinApi extends Vygu {
             $this->acs[ $this->nact ] = \WeakReference::create($v);
             return;
          break;
-         case Button::BUTTON:
-            $ret = $u->CreateWindowExW( 0, $this->swp( self::CBUTTON ),
-            null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
-            $this->dummy, null, $this->hins, null );
-         break;
+         case Button::BUTTON: $ret = $w->CreateWindowButton(); break;
          case Group::GROUP:
          case Label::LABEL:
-            $ret = $u->CreateWindowExW( 0, $this->swp( self::CSTATIC ),
-            null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
-            $this->dummy, null, $this->hins, null );
+            $ret = $w->CreateWindowStatic();
          break;
-         case Memo::MEMO:
-            $ret = $u->CreateWindowExW( self::WS_EX_CLIENTEDGE, $this->swp( self::CEDIT ),
-            null, self::WS_CHILD | self::WS_VISIBLE | self::WS_VSCROLL
-            | self::ES_MULTILINE | self::ES_AUTOVSCROLL | self::ES_WANTRETURN,
-            0, 0, 30, 30, $this->dummy, null, $this->hins, null );
-         break;
+         case Memo::MEMO: $ret = $w->CreateWindowEdit(); break;
          case Menu::MENU:
-            $ret = $u->CreatePopupMenu();
+            $ret = $w->CreatePopupMenu();
             $v->data = [];
          break;
-         case Window::WINDOW:
-            $ret = $u->CreateWindowExW( 0, $this->swp( self::CVYGU ),
-               null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100,
-               null, null, $this->hins, null );
-         break;
+         case Window::WINDOW: $ret = $w->CreateWindowWindow(); break;
          default: return parent::elemCreate( $v );
       }
-      $this->checkW( $ret, "Could not create winapi $h" );
       $v->impl = $ret;
-      $this->wnds[ $this->ptri( $ret ) ] = \WeakReference::create($v);
-      if ( ! in_array( $h, [Window::WINDOW, Menu::MENU, Action::ACTION] )) {
-         $this->checkW( $this->ffc->SetWindowSubclass(
-            $ret,$this->subPrc->f,1,0),
-            "Could not set window subclass");
-      }
-   }
-
-   // string WCHAR *-gá alakítás
-   function sw( $s ) {
-      $u = mb_convert_encoding( $s, Tools::U16L, Tools::UTF );
-      $l = strlen($u);
-      $buf = $this->ffu->new("WCHAR[".(($l >> 1)+1)."]");
-      \FFI::memcpy($buf,$u,$l);
-      return $buf;
-   }
-
-   // wide stringként tárolás, és pointer az első betűre
-   function swp( $s ) {
-      if (! $ret = Tools::g( $this->swps, $s ))
-         $ret = $this->swps[$s] = $this->sw($s);
-      return \FFI::addr( $ret[0] );
-   }
-
-   // WCHAR * stringgé alakítás
-   function ws( $w, $l ) {
-      if (null === $l)
-         for ($l=0; 0 != $w[$l]; ++$l);
-      $u = $this->ffu;
-      $ret = \FFI::string( $u->cast("char *",\FFI::addr($w)), 2*$l );
-      return mb_convert_encoding( $ret, Tools::UTF, Tools::U16L );
+      $this->wnds[ $w->ptri( $ret ) ] = \WeakReference::create($v);
+      if ( ! in_array( $h, [Window::WINDOW, Menu::MENU, Action::ACTION] ))
+         $w->SetWindowSublcass( $ret );
    }
 
    // wndProc futtatás
@@ -345,7 +116,7 @@ class WinApi extends Vygu {
             $this->err = $e;
          }
       }
-      return $this->ffu->DefWindowProcW($hwnd,$msg,$wparam,$lparam);
+      return $this->wrap->DefWindowProc($hwnd,$msg,$wparam,$lparam);
    }
 
    // subProc futtatás
@@ -358,24 +129,24 @@ class WinApi extends Vygu {
             $this->err = $e;
          }
       }
-      return $this->ffc->DefSubclassProc($hwnd,$msg,$wparam,$lparam);
+      return $this->wrap->DefSubclassProc($hwnd,$msg,$wparam,$lparam);
    }
 
    //  egy view message kezelése
    function handleMsg($hwnd, $msg, $wparam, $lparam) {
+      $w = $this->wrap;
       if ( ! $v = $this->viewByHwnd( $hwnd ) )
          return;
-      $u = $this->ffu;
       switch ($msg) {
-         case self::WM_CLOSE:
+         case WinApiWrap::WM_CLOSE:
             if ( ! $v->handle( Window::CLOSING ))
                return true;
-         case self::WM_SIZE:
+         case WinApiWrap::WM_SIZE:
             if (! $v instanceof Group)
                return;
             $v->layout();
             return true;
-         case self::WM_COMMAND:
+         case WinApiWrap::WM_COMMAND:
             if ( ! $lparam ) {
                $id = $wparam & 0xffff;
                if ($a = $this->actById( $id )) {
@@ -383,49 +154,21 @@ class WinApi extends Vygu {
                   return true;
                }
             }
-            if ( ! $s = $this->viewByHwnd( $u->cast("HWND",$lparam)))
+            if ( ! $s = $this->viewByHwnd( $w->cast("HWND",$lparam)))
                return;
             switch ( $e = ($wparam >> 16) & 0xffff ) {
-               case self::BN_CLICKED:
+               case WinApiWrap::BN_CLICKED:
                   $s->handle( Elem::FIRE );
                   return  true;
             }
          break;
-         case self::WM_KEYDOWN:
-         case self::WM_KEYUP:
+         case WinApiWrap::WM_KEYDOWN:
+         case WinApiWrap::WM_KEYUP:
             $k = $this->key( $wparam, $lparam );
             if ($v->handle( View::KEY, [$k] ))
                return true;
          break;
       }
-   }
-
-   // check windows hibával
-   function checkW( $x, $err ) {
-      if ( ! (bool)$x )
-         throw new EVygu("$err: ".$this->lastError());
-      return $x;
-   }
-
-   // check handle windows hibával
-   function checkH( $x, $err ) {
-      $i = $this->ptri($x);
-      if ( 0 == $i || -1 == $i)
-         throw new EVygu("$err: ".$this->lastError());
-      return $x;
-   }
-
-   // utolsó hibaüzenet
-   function lastError() {
-      $k = $this->ffk;
-      $ret = $k->GetLastError();
-      if ( ! $ret ) return "";
-      $buf = $k->new("WCHAR[".self::ERRLEN."]");
-      $l = $k->FormatMessageW( 0x1200, null, $ret, 0,
-         \FFI::addr($buf[0]), self::ERRLEN, null );
-      if ($l)
-         return sprintf( "%s (%s)", $this->ws( $buf, $l ), $ret );
-         else return "$ret";
    }
 
    function elemProperty( Elem $v, $p, $x ) {
@@ -447,72 +190,54 @@ class WinApi extends Vygu {
 
    // view text olvasása vagy írása
    function viewText($v,$x) {
-      $u = $this->ffu;
-      if (Tools::GET == $x) {
-         $l = $u->GetWindowTextLengthW( $v->impl );
-         $buf = $u->new("WCHAR[".($l+1)."]");
-         $bufp = \FFI::addr($buf[0]);
-         $u->GetWindowTextW( $v->impl, $bufp, $l+1 );
-         return $this->ws( $buf, $l );
-      } else {
-         $this->checkW( $u->SetWindowTextW( $v->impl, $this->sw( "$x" )),
-            "Could not set text" );
-         return $v;
-      }
+      $w = $this->wrap;
+      if (Tools::GET == $x)
+         return $w->getText( $v->impl );
+         else $w->setText( $v->impl, $x );
+      return $v;
    }
 
    // view elrejtése, vagy megjelenítése
    function viewVisible($v,$x) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       if (Tools::GET === $x)
-         return $u->IsWindowVisible( $v->impl );
-      if ($x) {
-         $u->ShowWindow( $v->impl, self::SW_SHOW );
-      } else {
-         $u->ShowWindow( $v->impl, self::SW_HIDE );
-      }
+         return $w->getVisible( $v->impl );
+         else $w->setVisible( $v->impl, $x );
       return $v;
    }
 
    // view position-je
    function viewPosition($v,$x) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       $g = Tools::GET === $x;
       switch ($v->kind()) {
          case Edit::EDIT:
          case Memo::MEMO:
          case Rich::RICH:
-            $lp = $this->ptri( \FFI::addr( $this->longs[0] ));
-            if ($g) {
-               $u->SendMessageW( $v->impl, self::EM_GETSEL, $lp, 0 );
-               return $this->longs[0];
-            } else {
-               $this->longs[0] = $x;
-               $u->SendMessageW( $v->impl, self::EM_SETSEL, $lp, 0 );
-            }
+            if ($g)
+               return $w->getSel( $v->impl )[0];
+               else $w->setSel( $v->impl, $x, null );
+         break;
          default: 
             return parent::elemProperty($v,View::POSITION,$x);
       }
-      return $this;
+      return $v;
    }
 
    // view selLength-je
    function viewSelLength($v,$x) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       $g = Tools::GET === $x;
       switch ($v->kind()) {
          case Edit::EDIT:
          case Memo::MEMO:
          case Rich::RICH:
-            $lp0 = $this->ptri( \FFI::addr( $this->longs[0] ));
-            $lp1 = $this->ptri( \FFI::addr( $this->longs[1] ));
-            $u->SendMessageW( $v->impl, self::EM_GETSEL, $lp0, $lp1 );
+            $s = $w->getSel( $v->impl );  
             if ($g)
-               return $this->longs[1]-$this->longs[0];
-            $this->longs[1] = $this->longs[0] + $x;
-            $u->SendMessageW( $v->impl, self::EM_SETSEL, $lp0, $lp1 );
+               return $s[1]-$s[0];
+            $w->setSel( $v->impl, $s[0], $s[0]+$x );
          default: 
-            return parent::elemProperty($v,View::POSITION,$x);
+            return parent::elemProperty($v,View::SELLENGTH,$x);
       }
       return $this;
    }
@@ -527,47 +252,40 @@ class WinApi extends Vygu {
       $u = $this->ffu;
       $m = $u->CreateMenu();
       foreach ($x->items as $i) {
-         switch ($i->kind()) {
+         switch ($k = $i->kind()) {
             case Action::ACTION:
-               $ret = $u->AppendMenuW( $m, self::MF_STRING,
-                  $i->data[ Elem::ID ], $this->sw( $i->name() ));
+               $ret = $w->appendMenuItem( $m, $i->data[ Elem::ID ], 
+                  $i->name() );
             break;
             case Menu::MENU:
-               $ret = $u->AppendMenuW( $m, self::MF_POPUP, 
-                  $this->ptri($i->impl), $this->sw( $i->name()));
+               $ret = $w->appendMenuSub( $m, $i->impl, $i->name() );
             break;
-            default: throw new EVygu("Could not append menu");
+            default: throw new EVygu("Could not append menu: $k");
          }
-         $this->checkW( $ret, "Could not appedn menu");
       }
       if ( $old ) {
-         SetMenu( $v->impl, null );
-         DestroyMenu( $old->data[ self::HMENU ] );
+         $w->setMenu( $v->impl, null );
+         $w->destroyMenu( $old->data[ self::HMENU ] );
       }
-      $this->checkW( $u->SetMenu($v->impl, $m),
-         "Could not set menu");
+      $w->setMenu( $v->impl, $m );
       $v->data[ self::HMENU ] = $m;
       $v->data[ Window::MENU ] = $x;
       return $v;
    }
 
    function menuAdd(Menu $m, $x) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       switch ($k = $x->kind()) {
          case Menu::MENU:
-            return $this->checkW( $u->AppendMenuW( $m->impl, self::MF_POPUP, 
-               $this->ptri($x->impl), $this->sw( $x->name())), 
-               "Could not add submenu");
+            return $w->appendMenuSub( $m->impl, $x->impl, $x->name() );
          break;
          case Action::ACTION:
-            return $this->checkW( $u->AppendMenuW( $m->impl, self::MF_STRING,
-               $x->data[ Elem::ID ], $this->sw( $x->name() )),
-               "Could not add action");
+            return $w->appendMenuItem( $m->impl, $x->data[ Elem::ID ], 
+               $x->name() );
          break;
       }
       return parent::menuAdd($m,$x);
    }
-   
 
    // view igazítás
    function viewAlign($v,$x) {
@@ -584,10 +302,10 @@ class WinApi extends Vygu {
 
    // stílus szó írás vagy olvasás
    function viewStyleWord($v,$x=Tools::GET) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       if (Tools::GET === $x)
-         return $u->GetWindowLongPtrW( $v->impl, self::GWL_STYLE );
-      $u->SetWindowLongPtrW( $v->impl, self::GWL_STYLE, $x );
+         return $w->getStyle( $v->impl );
+      $w->setStyle( $v->impl, $x );
       $v->invalidate();
    }
 
@@ -595,30 +313,19 @@ class WinApi extends Vygu {
    }
 
    function viewInvalidate(View $v) {
-      $this->ffu->InvalidateRect($v->impl,null,false);
+      $this->wrap->invalidate( $v->impl );
    }
 
    function viewParent( View $v, ?Group $g ) {
-      $u = $this->ffu;
-      $vi = $v->impl;
+      $w = $this->wrap;
       if ($g)
-         $u->SetParent($vi, $g->impl);
-         else $u->SetParent($vi, null);
+         $u->setParent($v->impl, $g->impl);
+         else $u->setParent($v->impl, null);
    }
 
    function runStep( $wait ) {
-      $u = $this->ffu;
-      $m = $this->wndMsg;
-      $ma = \FFI::addr( $m );
-      if (! $wait
-            && ! $u->PeekMessageW( $ma, null, 0, 0, 0 ))
-         return false;
-      $ret = $u->GetMessageW( $ma, null, 0, 0 );
-      if ( 0 > $ret )
-         throw new EVygu("Cannot get winapi message: ".$this->lastError());
-      $u->TranslateMessage( $ma );
-      $u->DispatchMessageW( $ma );
-      if ( self::WM_QUIT == $m->message ) {
+      $m = $this->wrap->messageStep( $wait );
+      if ( WinApiWrap::WM_QUIT == $m->message ) {
          $this->finish();
          return true;
       }
@@ -628,7 +335,7 @@ class WinApi extends Vygu {
 
    // view hwnd alapján
    function viewByHwnd( $hwnd ) {
-      $i = $this->ptri( $hwnd );
+      $i = $this->wrap->ptri( $hwnd );
       if ( $ret = Tools::g( $this->wnds, $i ) )
          return $ret->get();
          else return null;
@@ -641,21 +348,11 @@ class WinApi extends Vygu {
       return null;
    }
 
-   // c pointer -> int
-   function ptri( $p ) {
-      $u = $this->ffu;
-      return $u->cast("void *",$p) - $u->cast("void*",0);
-   }
-
    function screenCoord( Screen $s, $c ) {
-      $u = $this->ffu;
-      $r = $this->rect;
       switch ($c) {
          case Layout::CONTHEIGHT:
          case Layout::CONTWIDTH:
-            $this->checkW( $u->SystemParametersInfoW(
-               self::SPI_GETWORKAREA, 0, \FFI::addr($r), 0 ),
-               "Could not get screen coord: $c");
+            $r = $this->wrap->workArea();
          break;
       }
       switch ($c) {
@@ -667,8 +364,6 @@ class WinApi extends Vygu {
    }
 
    function viewCoord( View $v, $c, $x, & $tmp ) {
-      $u = $this->ffu;
-      $im = $v->impl;
       $g = Tools::GET === $x;
       // amihez nem kell rect
       switch ($c) {
@@ -758,30 +453,15 @@ class WinApi extends Vygu {
    }
 
    function viewFocus(View $v) {
-      $this->ffu->SetFocus( $v->impl );
+      $this->wrap->setFocus( $v->impl );
    }
 
    function dialog( $kind, array $args ) {
-      $d = $this->ffd;
+      $w = $this->wrap;
       switch ($kind) {
          case Dialog::OPEN:
          case Dialog::SAVE:
-            $s = $d->new("OPENFILENAMEW");
-            $fn = $d->new("WCHAR[".self::PATHLEN."]");
-            $s->lStructSize = \FFI::sizeof( $s );
-            $s->lpstrFile = \FFI::addr($fn[0]);
-            $s->nMaxFile = self::PATHLEN;
-            if ( Dialog::OPEN == $kind) {
-               $s->Flags = self::OFN_FILEMUSTEXIST | self::OFN_PATHMUSTEXIST;
-               $r = $d->GetOpenFileNameW( \FFI::addr($s));
-            } else {
-               $s->Flags = self::OFN_OVERWRITEPROMPT 
-                  | self::OFN_PATHMUSTEXIST | self::OFN_NOCHANGEDIR;
-               $r = $d->GetSaveFileNameW( \FFI::addr($s));
-            }
-            if ( $r )
-               return $this->ws( $fn, null );
-               else return null;
+            return $w->getOpenFileName($kind);
          break;
          default: 
             return parent::dialog( $kind, $args );
@@ -790,62 +470,52 @@ class WinApi extends Vygu {
 
    // Key eseményből
    function key( $wparam, $lparam ) {
+      $w = $this->wrap;
       $ret = new Key();
-      $this->getKeyState();
+      $w->getKeyState();
       $ret->event = Tools::bits($lparam,31,1)
          ? Key::RELEASE : Key::PRESS;
-      $ret->modif = $this->keyModif();
+      $ret->modif = $w->keyModif();
       $ret->scan = Tools::bits($lparam,16,8);
-      $ret->unicode = $this->keyUnicode( $wparam, $ret->scan );
+      $ret->unicode = $w->keyUnicode( $wparam, $ret->scan );
       $ret->special = Tools::g( self::MSPECS, intval( $wparam ) );
       return $ret;
    }
 
-   /// módosítók a keytstate alapján
-   protected function keyModif() {
-      $s = $this->keyState;
-      $ret = 0;
-      if ($s[self::VK_SHIFT] & 0x80)
-         $ret |= Key::MSHIFT;
-      if ($s[self::VK_CONTROL] & 0x80)
-         $ret |= Key::MCTRL;
-      if ($s[self::VK_MENU] & 0x80)
-         $ret |= Key::MALT;
-      return $ret;
+   /// a szöveg egy része
+   function textPart( Edit $v, $at, $len, $x = Tools::GET ) {
+      $w = $this->wrap;
+      $g = Tools::GET == $x;
+      switch ($v->kind()) {
+         case Memo::MEMO:
+            if ($g) 
+               return $w->getTextPart( $v, $at, $at+len );
+               else $w->setTextPart( $v, $at, $at+$len, $x );
+         break;
+         default: return parent::textPart( $v, $at, $len, $x );
+      }
+      return $v;
    }
 
-   // unicode kód
-   protected function keyUnicode($wparam,$scan) {
-      $n = $this->ffu->ToUnicode( $wparam,
-         $scan, \FFI::addr($this->keyState[0]),
-         \FFI::addr($this->wchars[0]), 2, 0 );
-      if (1 == $n)
-         return $this->wchars[0];
-      return 0;
-   }
-
-   // keyboard state lekérése
-   protected function getKeyState() {
-      $this->checkW( $this->ffu->GetKeyboardState(
-         \FFI::addr($this->keyState[0])), "Could not get keyboard state");
+   function clipboardValue( Clipboard $c, $x = Tools::GET ) {
+      $w = $this->wrap;
+      if ( Tools::GET === $x )
+         return $w->getClipboard();
+         else $w->setClipboard($x);
    }
 
    // temp adat $v-ez
    protected function temp(View $v, $kind, & $tmp ) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       if (true === $tmp)
          $tmp = [self::TLAST=>true];
       if ( ! $ret = Tools::g( $tmp, $kind )) {
          switch ($kind) {
             case self::TRECT:
-               $this->checkW( $u->GetWindowRect( $v->impl,
-                  \FFI::addr($this->rect)),"Could not get window rect");
-               $ret = $this->rect;
+               $ret = $w->getWindowRect( $v->impl );
             break;
             case self::TCONT:
-               $this->checkW( $u->GetClientRect( $v->impl,
-                  \FFI::addr($this->rect)),"Could not get client rect");
-               $ret = $this->rect;
+               $ret = $w->getClientRect( $v->impl );
             break;
             case self::TDEF:
                $ret = $this->viewDefSize($v);
@@ -859,30 +529,19 @@ class WinApi extends Vygu {
 
    /// view default mérete
    protected function viewDefSize( View $v ) {
-      $u = $this->ffu;
+      $w = $this->wrap;
       switch ($k = $v->kind()) {
          case Label::LABEL:
-            $txt = $v->text();
-            $r = $this->rect;
-            $u->DrawTextW( $this->dc, $this->sw( $txt ), -1,
-               \FFI::addr($r), self::DT_CALCRECT );
+            $r = $w->calcText( $v->text() );
             return [$r->right-$r->left,$r->bottom-$r->top];
          break;
          case Button::BUTTON:
-            $zp = $this->ptri( \FFI::addr( $this->siz ) );
-            if ( $u->SendMessageW( $v->impl, self::BCM_GETIDEALSIZE, 0, $zp ))
-               return [$this->siz->cx, $this->siz->cy];
+            $s = $w->getIdealSize( $v->impl );
+            return [$s->cx, $s->cy];
          break;
          default: 
       }
       throw new EVygu("Cannot get default size: $k");
-   }
-
-   /// nwms hash létrehozása
-   protected function initNwms() {
-      $this->nwms = [];
-      foreach ( self::WM_ALL as $w )
-         $this->nwms[$w] = true;
    }
 
    /// a globális $err ellenőrzése, és dobása
@@ -895,9 +554,7 @@ class WinApi extends Vygu {
 
    protected function viewCoordLast(View $v, $tmp) {
       if ($r = Tools::g($tmp,self::TRECT)) {
-         $this->checkW( $this->ffu->MoveWindow( $v->impl,
-            $r->left, $r->top, $r->right-$r->left, $r->bottom-$r->top,
-            false ), "Could not move window");
+         $this->wrap->moveWindow( $v->impl, $r );
          $this->viewInvalidate($v);
       }
    }
@@ -908,9 +565,7 @@ class WinApi extends Vygu {
          $u = $this->ffu;
          if ( ! $id = Tools::g( $this->map( View::CURSOR ), $c ))
             throw new EVygu("Unknown cursor: $c");
-         $idp = $u->cast("void *",$id);
-         $ret = $this->checkW( $u->LoadCursorW( null, $idp ),
-            "Could not load cursor: $id");
+         $ret = $this->wrap->loadCursor( $id );
          $this->crsrs[ $c ] = $ret;
       }
       return $ret;
@@ -924,19 +579,5 @@ class WinApi extends Vygu {
       }
    }
 
-   // activationcontext aktiválás
-   protected function activateContext( $fname ) {
-      $k = $this->ffk;
-      $act = $k->new("ACTCTXW");
-      $act->cbSize = \FFI::sizeof($act);
-      $act->lpSource = $this->swp( __DIR__."\\".$fname );
-      $acok = $k->new("ULONG_PTR");
-      $h = $this->checkH( $k->CreateActCtxW(\FFI::addr($act)),
-         "Could not create activation context");
-      $this->checkW($k->ActivateActCtx($h, \FFI::addr($acok)),
-         "Could not activate context");
-   }
-      
-   
 
 }

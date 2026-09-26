@@ -90,6 +90,11 @@ class Tools {
       return mb_strlen($s,self::UTF);
    }
 
+   /// utf-8 substring
+   static function usub($s,$at,$n=null) {
+      return mb_substr($s,$at,$n,self::UTF);
+   }
+
    /// Lowercase utf8 string
    static function ulower($s) {
       return mb_strtolower($s,self::UTF);

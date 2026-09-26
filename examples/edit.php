@@ -70,7 +70,7 @@ class VyguEdit {
 
    /// Ask if file needs to be saved
    function saveQuery() {
-      if ($this->memo->text() !== $this->ftext) {
+      if ($this->memo->text() != $this->ftext) {
          switch (Dialog::confirm3("Save changes?")) {
             case Dialog::YES: $this->fileSave(); break;
             case Dialog::NO: break;
