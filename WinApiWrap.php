@@ -14,16 +14,6 @@ class WinApiWrap {
       PATHLEN = 1024;
 
    const
-      HMENU = "hmenu";
-
-   // temp adatok
-   const
-      TCONT = "tCont",
-      TDEF  = "tDef",
-      TLAST = "tLast",
-      TRECT = "tRect";
-
-   const
       BCM_GETIDEALSIZE = 0x1601,
       
       BN_CLICKED = 0,
@@ -37,9 +27,13 @@ class WinApiWrap {
 
       DT_CALCRECT = 0x400,
 
+      EM_GETLINE = 0xc4,
       EM_GETSEL = 0xb0,
-      EM_SETSEL = 0xb1,
+      EM_LINEFROMCHAR = 0xc9,
+      EM_LINEINDEX = 0xbb,
+      EM_LINELENGTH = 0xc1,
       EM_REPLACESEL = 0xc2,
+      EM_SETSEL = 0xb1,
 
       ES_AUTOVSCROLL = 0x40,
       ES_MULTILINE = 0x4,
@@ -48,6 +42,8 @@ class WinApiWrap {
       GMEM_MOVEABLE = 2,
 
       GWL_STYLE = -16,
+
+      IDC_ARROW = 0x7f00,
 
       MF_POPUP = 0x10,
       MF_STRING = 0,
@@ -122,9 +118,13 @@ class WinApiWrap {
    public $wndPrc;
    // subclass proc
    public $subPrc;
-
    // szükséges wm-ek
    public $nwms;
+   // kivétel callback-ben
+   public $err;
+
+   /// A winapi objektum
+   protected $winapi;
    // user32.dll
    protected $ffu;
    // kernel32.dll
@@ -145,8 +145,6 @@ class WinApiWrap {
    protected $rect;
    // hasznos size
    protected $siz;
-   // kurzorok betöltve
-   protected $crsrs;
    // DC számolásokhoz
    protected $dc;
    // bájtok
@@ -156,11 +154,9 @@ class WinApiWrap {
    // dummy parent
    protected $dummy;
 
-
-   function __construct() {
-      $hu = Tools::loadFile( __DIR__."/win_user32.h" );
+   function __construct( $winapi ) {
+      $this->winapi = $winapi;
       $this->swps = [];
-      $this->crsrs = [];
       $this->initNwms();
       $ht = Tools::loadFile( __DIR__."/win_type".Tools::sysBits().".h" );
       $hk = Tools::loadFile( __DIR__."/win_kernel32.h" );
@@ -181,11 +177,17 @@ class WinApiWrap {
       $this->longs = $u->new("LONG[2]");
       $this->activateContext( "comctl6.manifest");
       $sp = $this->subPrc = $c->new("SSUBCLASSPROC");
+      $sp->f = function($hwnd,$msg,$wparam,$lparam,$sub,$ref) {
+         return $this->subProc($hwnd,$msg,$wparam,$lparam);
+      };
       $wp = $this->wndPrc = $u->new("SWNDPROC");
+      $wp->f = function($hwnd,$msg,$wparam,$lparam) use ($winapi) {
+         return $this->wndProc($hwnd,$msg,$wparam,$lparam);
+      };
       $cn = $this->swp( self::CVYGU );
       $this->hins = $this->checkW( $k->GetModuleHandleW(null),
          "Could not get instance");
-      $this->dummy = $this->CreateWindowDummy();
+      $this->dummy = $this->createWindowDummy();
       $wc = $u->new("WNDCLASSEXW");
       $wc->size = \FFI::sizeof($wc);
       $wc->style = 3;
@@ -193,7 +195,7 @@ class WinApiWrap {
       $wc->clsName = $cn;
       $wc->inst = $this->hins;
       $wc->back = $u->cast("void *",self::COLOR_WINDOW);
-      $wc->cursor = $this->fromCursor( Cursor::DEFAULT );
+      $wc->cursor = $this->loadCursor( self::IDC_ARROW );
       $this->checkW( $u->RegisterClassExW( \FFI::addr($wc) ),
          "Could not register window class");
       $this->dc = $this->checkW( $g->CreateCompatibleDC(null),
@@ -297,13 +299,13 @@ class WinApiWrap {
    }
 
    /// clpiboard nyitás / zárás
-   function closeClipboard($open) {
-      $ret = $this->ffu->CloseClipboard( $this->dummy );
+   function closeClipboard() {
+      $ret = $this->ffu->CloseClipboard();
       $this->checkW( $ret, "Could not close clipboard");
    }
     
    // Button Wnd készítése
-   function CreateWindowButton() {
+   function createWindowButton() {
       $ret = $this->ffu->CreateWindowExW( 0, 
          $this->swp( self::CBUTTON ),
          null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
@@ -312,7 +314,7 @@ class WinApiWrap {
    }
 
    // Dummy Wnd készítése
-   function CreateWindowDummy() {
+   function createWindowDummy() {
       $ret = $this->ffu->CreateWindowExW( 0, 
          $this->swp( self::CSTATIC ), null, 
          self::WS_POPUP | self::WS_VISIBLE, 0, 0, 10, 10,
@@ -321,7 +323,7 @@ class WinApiWrap {
    }
 
    // Edit Wnd készítése
-   function CreateWindowEdit() {
+   function createWindowEdit() {
       $ret = $this->ffu->CreateWindowExW( self::WS_EX_CLIENTEDGE, 
          $this->swp( self::CEDIT ), null, self::WS_CHILD
             | self::WS_VISIBLE | self::WS_VSCROLL | self::ES_MULTILINE 
@@ -331,7 +333,7 @@ class WinApiWrap {
    }
 
    // Static Wnd készítés
-   function CreateWindowStatic() {
+   function createWindowStatic() {
       $ret = $this->ffu->CreateWindowExW( 0, $this->swp( self::CSTATIC ),
        null, self::WS_CHILD | self::WS_VISIBLE, 0, 0, 10, 10,
             $this->dummy, null, $this->hins, null );
@@ -339,16 +341,23 @@ class WinApiWrap {
    }
 
    // Window wnd készítés
-   function CreateWindowWindow() {
-      return $this->ffu->CreateWindowExW( 0, $this->swp( self::CVYGU ),
+   function createWindowWindow() {
+      $ret = $this->ffu->CreateWindowExW( 0, $this->swp( self::CVYGU ),
          null, self::WS_OVERLAPPEDWINDOW, 0, 0, 100, 100,
          null, null, $this->hins, null );
+      return $this->checkH( $ret, "Cound not create window");
+   }
+
+   // Menü készítés
+   function createMenu() {
+      $ret = $this->ffu->CreateMenu();
+      return $this->checkH( $ret, "Could not create menu");
    }
 
    // Popup menü készítés
-   function CreatePopupMenu() {
+   function createPopupMenu() {
       $ret = $this->ffu->CreatePopupMenu();
-      return $this->checkH( "Could not create menu");
+      return $this->checkH( $ret, "Could not create popup menu");
    }
 
    /// menü felszámolás
@@ -357,18 +366,13 @@ class WinApiWrap {
       return $this->checkW( "Could not destroy menu");
    }
 
-   /// default wndproc
-   function DefWindowProc( $w, $msg, $wparam, $lparam ) {
-      return $this->ffu->DefWindowProcW($w,$msg,$wparam,$lparam);
-   }
-
    /// default subproc
-   function DefSubclassProc( $w, $msg, $wparam, $lparam ) {
+   function defSubclassProc( $w, $msg, $wparam, $lparam ) {
       return $this->ffc->DefSubclassProc($w,$msg,$wparam,$lparam);
    }
 
    function getClientRect( $w ) {
-      $ret = $this->ffu->GetClientRect( $v->impl, \FFI::addr($this->rect));
+      $ret = $this->ffu->GetClientRect( $w, \FFI::addr($this->rect));
       $this->checkW( $ret, "Could not get client rect");
       return $this->rect;
    }      
@@ -381,8 +385,8 @@ class WinApiWrap {
          $this->checkH( $h, "Could not get clipboard data");
          $s = $this->globalLock($h);
          try {
-            $l = $k->lstrlenW( $s );
-            return $this->ws( $s, $l );
+            $l = $this->ffk->lstrlenW( $s );
+            return $this->ws( $s[0], $l );
          } finally {
             $this->globalUnlock( $h );
          }
@@ -393,13 +397,13 @@ class WinApiWrap {
 
    function getIdealSize( $w ) {
       $zp = $this->ptri( \FFI::addr( $this->siz ) );
-      $ret = $u->SendMessageW( $w, self::BCM_GETIDEALSIZE, 0, $zp );
+      $ret = $this->ffu->SendMessageW( $w, self::BCM_GETIDEALSIZE, 0, $zp );
       $this->checkW( $ret, "Could not get ideal size");
       return $this->siz;
    }
 
    // keyboard state lekérése
-   protected function getKeyState() {
+   function getKeyState() {
       $ret = $this->ffu->GetKeyboardState( \FFI::addr($this->keyState[0]));
       $this->checkW( $ret, "Could not get keyboard state");
    }
@@ -456,19 +460,42 @@ class WinApiWrap {
 
    // ablak szövegének része
    function getTextPart( $w, $head, $tail ) {
-      $this->getRowCol( $head, $sr, $sc );
-      $this->getRowCol( $tail, $er, $ec );
+      $this->getRowCol( $w, $head, $sr, $sc );
+      $this->getRowCol( $w, $tail, $er, $ec );
       $ret = "";
       for ($i=$sr; $i<=$er; ++$i) {
-         $r = $this->getRow( $v->impl, $i );
+         $r = $this->getRow( $w, $i );
          if ( $er == $i )
-            $r = $this->wsub( $r, 0, $ec );
+            $r = Tools::usub( $r, 0, $ec );
          if ( $sr == $i )
-            $r = $this->wsub( $r, $sc );
-            $ret .= $this->ws( $r, $this->wlen( $r ) );
+            $r = Tools::usub( $r, $sc );
+         $ret .= $r;
       }
       return $ret;
    }      
+
+   /// hely sorának és oszlopának lekérdezése
+   function getRowCol( $w, $at, & $r, & $c ) {
+      $u = $this->ffu;
+      $r = $u->SendMessageW( $w, self::EM_LINEFROMCHAR, $at, 0 );
+      $s = $u->SendMessageW( $w, self::EM_LINEINDEX, $r, 0 );
+      $c = $at-$s;
+   }
+   
+   /// egy sor szövegének lekérése
+   function getRow( $w, $r ) {
+      $u = $this->ffu;
+      $i = $u->SendMessageW( $w, self::EM_LINEINDEX, $r, 0 );
+      $l = $u->SendMessageW( $w, self::EM_LINELENGTH, $i, 0 );
+      if ( ! $l )
+         return "";
+      $b = $u->new( "WCHAR[$l]");
+      $b[0] = $l;
+      $u->SendMessageW( $w, self::EM_GETLINE, $r, 
+         $this->ptri(\FFI::addr($b[0])));
+      $ret = $this->ws( $b, $l );
+      return $ret;
+   }
 
    /// látható-e
    function getVisible( $w ) {
@@ -476,13 +503,13 @@ class WinApiWrap {
    }
 
    function globalAlloc( $z ) {
-      $ret = $this->ffk->GlobalAlloc( self::GMEM_MOVEABLE, $wz );
-      $this->checkH( $ret, "Could not alloc data");
+      $ret = $this->ffk->GlobalAlloc( self::GMEM_MOVEABLE, $z );
+      return $this->checkH( $ret, "Could not alloc data");
    }
 
    function globalLock($h) {
       $ret = $this->ffk->GlobalLock($h);
-      $this->checkW( $ret, "Could not lock data" );
+      return $this->checkW( $ret, "Could not lock data" );
    }
 
    function globalUnlock($h) {
@@ -508,7 +535,7 @@ class WinApiWrap {
    }
 
    // unicode kód
-   protected function keyUnicode($wparam,$scan) {
+   function keyUnicode($wparam,$scan) {
       $n = $this->ffu->ToUnicode( $wparam,
          $scan, \FFI::addr($this->keyState[0]),
          \FFI::addr($this->wchars[0]), 2, 0 );
@@ -519,6 +546,7 @@ class WinApiWrap {
 
    /// fő message lépés
    function messageStep( $wait ) {
+      $u = $this->ffu;
       $m = $this->wndMsg;
       $ma = \FFI::addr( $m );
       if (! $wait && ! $u->PeekMessageW( $ma, null, 0, 0, 0 ))
@@ -532,6 +560,7 @@ class WinApiWrap {
    }
 
    function loadCursor( $id ) {
+      $u = $this->ffu;
       $idp = $u->cast("void *",$id);
       $ret = $u->LoadCursorW( null, $idp );
       return $this->checkW( $ret, "Could not load cursor: $id");
@@ -545,7 +574,7 @@ class WinApiWrap {
    }
 
    /// clpiboard nyitás / zárás
-   function openClipboard($open) {
+   function openClipboard() {
       $ret = $this->ffu->OpenClipboard( $this->dummy );
       $this->checkW( $ret, "Could not open clipboard");
    }
@@ -568,7 +597,7 @@ class WinApiWrap {
          } finally {
             $this->globalUnlock($h);
          }
-         $ret = $u->SetClipboardData( self::CF_UNICODETEXT, $h );
+         $ret = $this->ffu->SetClipboardData( self::CF_UNICODETEXT, $h );
          $this->checkW( $ret, "Could not set clipboard data");
       } finally {
          $this->closeClipboard();
@@ -592,15 +621,9 @@ class WinApiWrap {
 
    /// setsel hívás
    function setSel( $h, $head, $tail ) {
-      $this->longs[0] = $head;
-      $lp0 = $this->ptri( \FFI::addr( $this->longs[0] ));
-      if (null === $tail ) {
-         $lp1 = 0;
-      } else {
-         $this->longs[1] = $tail;
-         $lp1 = $this->ptri( \FFI::addr( $this->longs[1] ));
-      }
-      $this->ffu->SendMessageW( $h, self::EM_SETSEL, $lp0, $lp1 );
+      if ( null === $tail )
+         $tail = $head;
+      $this->ffu->SendMessageW( $h, self::EM_SETSEL, $head, $tail );
    }
 
    function setStyle( $w, $x ) {
@@ -609,11 +632,11 @@ class WinApiWrap {
 
    // subclass beállítása
    function setSubclass( $w ) {
-      $ret = $this->ffc->SetWindowSubclass( $h, $this->subPrc->f,1,0);
+      $ret = $this->ffc->SetWindowSubclass( $w, $this->subPrc->f,1,0);
       $this->checkW( $ret, "Could not set window subclass");
    }
 
-   function setText( $w, $txt ) {
+   function setText( $w, $x ) {
       $ret = $this->ffu->SetWindowTextW( $w, $this->sw( "$x" ));
       $this->checkW( $ret, "Could not set text" );
    }
@@ -623,27 +646,52 @@ class WinApiWrap {
       $this->setSel( $w, $head, $tail );
       $wx = $this->sw( "$x" );
       $this->ffu->SendMessageW( $w, self::EM_REPLACESEL,
-         true, $this->ptri( \FFI::addr( $w[0] ) ));
-         $d = $len - ($s[1]-$s[0]);
-         if ( $s[0] >= $tail )
-            $s[0] += $d;
-         if ( $s[1] >= $tail )
-            $s[1] += $d;
-         $this->setSel( $w, $s[0], $s[1] );
+         true, $this->ptri( \FFI::addr( $wx[0] ) ));
+      $d = $tail-$head - ($s[1]-$s[0]);
+      if ( $s[0] <= $tail )
+         $s[0] += $d;
+      if ( $s[1] <= $tail )
+         $s[1] += $d;
+      $this->setSel( $w, $s[0], $s[1] );
    }
     
    function setVisible( $w, $x ) {
-      $ret = $this->ffu->ShowWindow( $w, 
+      $this->ffu->ShowWindow( $w, 
          $x ? self::SW_SHOW : self::SW_HIDE );
-      $this->checkW( $ret );
    }
 
    /// screen work area lekérdezés
    function workArea() {
       $ret = $this->ffu->SystemParametersInfoW(
          self::SPI_GETWORKAREA, 0, \FFI::addr($this->rect), 0 );
-      $this->checkW( "Could not get workArea" );
+      $this->checkW( $ret, "Could not get workArea" );
       return $this->rect;
+   }
+
+   // wndProc futtatás
+   function wndProc( $hwnd, $msg, $wparam, $lparam ) {
+      if ( array_key_exists( $msg, $this->nwms )) {
+         try {
+            if ($this->winapi->handleMsg( $hwnd, $msg, $wparam, $lparam ))
+               return 0;
+         } catch (Throwable $e) {
+            $this->err = $e;
+         }
+      }
+      return $this->ffu->DefWindowProcW($hwnd,$msg,$wparam,$lparam);
+   }
+
+   // subProc futtatás
+   function subProc( $hwnd, $msg, $wparam, $lparam ) {
+      if ( array_key_exists( $msg, $this->nwms )) {
+         try {
+            if ($this->winapi->handleMsg($hwnd,$msg,$wparam,$lparam))
+               return 0;
+         } catch (Throwable $e) {
+            $this->err = $e;
+         }
+      }
+      return $this->ffc->DefSubclassProc($hwnd,$msg,$wparam,$lparam);
    }
 
    /// nwms hash létrehozása

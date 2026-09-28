@@ -27,7 +27,10 @@ class Edit extends View {
    
    /// Selected part as string
    function selPart($x=Tools::GET) { 
-      return $this->part( $this->position(), $this->selLength(), $x );
+      $ret = $this->part( $this->position(), $this->selLength(), $x );
+      if ( Tools::GET !== $x )
+         $this->selLength( Tools::ulen( $x ) );
+      return $ret;
    }
 
    /// Inserts text at a point
@@ -41,7 +44,7 @@ class Edit extends View {
       switch ($p) {
          case self::TEXT:
          case self::POSITION:
-         case self::SELSTART:
+         case self::SELLENGTH:
             return true;
          default:
             return parent::isProp($p);

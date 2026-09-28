@@ -137,7 +137,11 @@ class VyguEdit {
       
    /// Edit/paste handler
    function editPaste() { 
-      $this->memo->selPart( Clipboard::ins()->value() );
+      $m = $this->memo;
+      $s = Clipboard::ins()->value();
+      $m->selPart( $s );
+      $m->position( $m->position() + Tools::ulen($s));
+      $m->selLength(0);
    }
 
 }

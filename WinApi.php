@@ -9,6 +9,16 @@ class WinApi extends Vygu {
       /// Kind constant
       WINAPI = "winapi";
 
+   const
+      HMENU = "hmenu";
+
+   // temp adatok
+   const
+      TCONT = "tCont",
+      TDEF  = "tDef",
+      TLAST = "tLast",
+      TRECT = "tRect";
+
    // mapek
    const
       MALIGN = [
@@ -58,24 +68,19 @@ class WinApi extends Vygu {
    protected $wrap;
    // hwnd -> View
    protected $wnds;
+   // kurzorok betöltve
+   protected $crsrs;
    // id -> Action
    protected $acs;
-   // kivétel callback-ben
-   protected $err;
    // action sorszám
    protected $nact;
 
    function __construct($args) {
 	   parent::__construct($args);
-      $w = $this->wrap = new WinApiWrap();
       $this->wnds = [];
+      $this->crsrs = [];
       $this->acs = [];
-      $w->subPrc->f = function($hwnd,$msg,$wparam,$lparam,$sub,$ref) {
-         return $this->subProc($hwnd,$msg,$wparam,$lparam);
-      };
-      $w->wndPrc->f = function($hwnd,$msg,$wparam,$lparam) {
-         return $this->wndProc($hwnd,$msg,$wparam,$lparam);
-      };
+      $w = $this->wrap = new WinApiWrap($this);
    }
 
    function elemCreate( Elem $v ) {
@@ -87,49 +92,23 @@ class WinApi extends Vygu {
             $this->acs[ $this->nact ] = \WeakReference::create($v);
             return;
          break;
-         case Button::BUTTON: $ret = $w->CreateWindowButton(); break;
+         case Button::BUTTON: $ret = $w->createWindowButton(); break;
          case Group::GROUP:
          case Label::LABEL:
-            $ret = $w->CreateWindowStatic();
+            $ret = $w->createWindowStatic();
          break;
-         case Memo::MEMO: $ret = $w->CreateWindowEdit(); break;
+         case Memo::MEMO: $ret = $w->createWindowEdit(); break;
          case Menu::MENU:
-            $ret = $w->CreatePopupMenu();
+            $ret = $w->createPopupMenu();
             $v->data = [];
          break;
-         case Window::WINDOW: $ret = $w->CreateWindowWindow(); break;
+         case Window::WINDOW: $ret = $w->createWindowWindow(); break;
          default: return parent::elemCreate( $v );
       }
       $v->impl = $ret;
       $this->wnds[ $w->ptri( $ret ) ] = \WeakReference::create($v);
       if ( ! in_array( $h, [Window::WINDOW, Menu::MENU, Action::ACTION] ))
-         $w->SetWindowSublcass( $ret );
-   }
-
-   // wndProc futtatás
-   function wndProc( $hwnd, $msg, $wparam, $lparam ) {
-      if ( array_key_exists( $msg, $this->nwms )) {
-         try {
-            if ($this->handleMsg( $hwnd, $msg, $wparam, $lparam ))
-               return 0;
-         } catch (Throwable $e) {
-            $this->err = $e;
-         }
-      }
-      return $this->wrap->DefWindowProc($hwnd,$msg,$wparam,$lparam);
-   }
-
-   // subProc futtatás
-   function subProc( $hwnd, $msg, $wparam, $lparam ) {
-      if ( array_key_exists( $msg, $this->nwms )) {
-         try {
-            if ($this->handleMsg($hwnd,$msg,$wparam,$lparam))
-               return 0;
-         } catch (Throwable $e) {
-            $this->err = $e;
-         }
-      }
-      return $this->wrap->DefSubclassProc($hwnd,$msg,$wparam,$lparam);
+         $w->setSubclass( $ret );
    }
 
    //  egy view message kezelése
@@ -236,6 +215,7 @@ class WinApi extends Vygu {
             if ($g)
                return $s[1]-$s[0];
             $w->setSel( $v->impl, $s[0], $s[0]+$x );
+         break;
          default: 
             return parent::elemProperty($v,View::SELLENGTH,$x);
       }
@@ -249,8 +229,8 @@ class WinApi extends Vygu {
          return $old;
       if ( $x === $old )
          return $v;
-      $u = $this->ffu;
-      $m = $u->CreateMenu();
+      $w = $this->wrap;
+      $m = $w->createMenu();
       foreach ($x->items as $i) {
          switch ($k = $i->kind()) {
             case Action::ACTION:
@@ -319,8 +299,8 @@ class WinApi extends Vygu {
    function viewParent( View $v, ?Group $g ) {
       $w = $this->wrap;
       if ($g)
-         $u->setParent($v->impl, $g->impl);
-         else $u->setParent($v->impl, null);
+         $w->setParent($v->impl, $g->impl);
+         else $w->setParent($v->impl, null);
    }
 
    function runStep( $wait ) {
@@ -489,8 +469,8 @@ class WinApi extends Vygu {
       switch ($v->kind()) {
          case Memo::MEMO:
             if ($g) 
-               return $w->getTextPart( $v, $at, $at+len );
-               else $w->setTextPart( $v, $at, $at+$len, $x );
+               return $w->getTextPart( $v->impl, $at, $at+$len );
+               else $w->setTextPart( $v->impl, $at, $at+$len, $x );
          break;
          default: return parent::textPart( $v, $at, $len, $x );
       }
@@ -512,7 +492,7 @@ class WinApi extends Vygu {
       if ( ! $ret = Tools::g( $tmp, $kind )) {
          switch ($kind) {
             case self::TRECT:
-               $ret = $w->getWindowRect( $v->impl );
+               $ret = $w->getRect( $v->impl );
             break;
             case self::TCONT:
                $ret = $w->getClientRect( $v->impl );
@@ -546,8 +526,8 @@ class WinApi extends Vygu {
 
    /// a globális $err ellenőrzése, és dobása
    protected function checkErr() {
-      if ( $e = $this->err ) {
-         $this->err = null;
+      if ( $e = $this->wrap->err ) {
+         $this->wrap->err = null;
          throw $e;
       }
    }
@@ -562,7 +542,6 @@ class WinApi extends Vygu {
    // kurzor konverzió vissza
    protected function fromCursor( $c ) {
       if ( ! $ret = Tools::g( $this->crsrs, $c )) {
-         $u = $this->ffu;
          if ( ! $id = Tools::g( $this->map( View::CURSOR ), $c ))
             throw new EVygu("Unknown cursor: $c");
          $ret = $this->wrap->loadCursor( $id );
